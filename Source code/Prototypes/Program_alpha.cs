@@ -4,7 +4,7 @@ using static System.Console;
 class Program
 {
     // Constants for the board parsing, where figures are stored in bytes (temporary)
-    private const byte Empty       = 128;
+    private const byte Empty       = 128;  // This thing will be asigned to multiple symbols which resemble an empty square
     private const byte WhitePawn   = 1;
     private const byte WhiteRook   = 2;
     private const byte WhiteKnight = 3;
@@ -97,6 +97,10 @@ class Program
             case 'K': return BlackKing;
 
             case '+':
+            case '/':
+            case '0':
+            case '-':
+            case '_':
             case '=': return Empty;
             default: throw new ArgumentException($"Неизвестный символ: {c}"); // Throw error if symbol is invalid
         };
@@ -199,12 +203,12 @@ class Program
         int score = 0;
         for (int x = 0; x < 8; x++)
         {
-            for (int y = 0; y < 8; y++)
-            {
+            for (int y = 0; y < 8; y++)  // Actually I should add real coeficients to this shit,
+            {                            // Bcs currently a Queen weights 5, and a king weights 6
                 byte piece = board[x, y];
                 if (piece >= 1 && piece <= 6)
                 {
-                    score += piece; // Score moves up for white pieces on the board
+                    score += piece;         // Score moves up for white pieces on the board
                 }
                 else if (piece >= 250 && piece <= 255)
                 {
@@ -212,6 +216,6 @@ class Program
                 }
             }
         }
-        return score;
+        return score; // Wow this is also such bad code D:
     }
 }
