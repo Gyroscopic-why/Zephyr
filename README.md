@@ -15,9 +15,10 @@ But I am planning to grow it into a strong chess engine/bot in the future
 - UI will currently be only on english, however I will add russian UI later
 - (+) Make a board parsing function in the console
 - (+) Make an Evaluation function
-- Implement a function that calculates all legitimate moves
+- (+) Implement a function that calculates all legitimate moves
 - Make the engine find and remember forced mate sequences
-- Implement an optimised search algorith to calculate the positions
+- (+-) Implement an optimised search algorith to calculate the positions
+- (+) Make the engine make moves on it's own
 - Use multithread processing to increase the engines power and time efficiency
 - Make the engine see CheckMates up to 3 full moves as of now
 
@@ -40,6 +41,17 @@ But I am planning to grow it into a strong chess engine/bot in the future
      - Counts isolated pawns
      - Counts center control
      - (+-) Counts king safety (This needs to be reworked)
+ 
+### Delta:
+- Added a move calculation function
+- Added an alpha beta search function, seems to work :D
+- Added a player turn parser
+- Added a more clean info
+- Added a board encode function (the opposite of parsing)
+- Now the engine can play a move (and for both player colors!)
+- A bit of UI cleaning
+- Added a temporary placeholder for the mate recognition and saving its sequence
+  (haven't fully tested it but I am like 90% sure it doesn't work as it should)
 
 
 # Info :D
