@@ -61,41 +61,48 @@ class Program
 
     private static readonly byte[] wkPos = new byte[2];  // White king position
     private static readonly byte[] bkPos = new byte[2];  // Black king position
-    private static bool whiteTurn;       // Storing the player turn
+    private static bool whiteTurn;               // Storing the player turn
+    private static bool gPieceGotEaten = false;  // Storing if the last move was a capture
 
     static void Main(string[] args)
     {
-        Title = "Zephyr engine delta";                // Set the app title
+        Title = "Zephyr engine Delta+";              // Set the app title
 
+        int depth = GetDepth();                       // Get the depth for the alpha-beta search
         GetEncodedBoard(false);                       // Get the board position (classic storing)
         whiteTurn = GetTurn();                        // Ask whose turn it is (true = white)
 
         Clear();                                      // Clear the console
         PrintParsedBoard(mainBoard);                  // Print the parsed board
 
-        int eval = Evaluate(mainBoard);               // Evaluate the start board position
+        int eval = Evaluate(mainBoard, true);         // Evaluate the start board position
         Write($"\n\t\t\t\tCurrent eval: {eval}\n\t"); // Write the start board position eval result
 
-        ReadLine();                                // Wait for when user is ready
+        string continueGame = ReadLine();             // Wait for when user is ready
 
 
         // Prepare for the Alpha-beta search
-        int  depth   = 1;                          // Search depth
-        int  alpha   = int.MinValue;               // Min for the algorithm
-        int  beta    = int.MaxValue;               // Max for the algorithm
-       
-        AlphaBeta(mainBoard, depth, alpha, beta, whiteTurn, out Move makeBestMove); // Start the search
+        int  alpha   = int.MinValue;                  // Min for the algorithm
+        int  beta    = int.MaxValue;                  // Max for the algorithm
 
-        
-        Clear();                                             // Clear the console
-        ApplyMove(mainBoard, makeBestMove);                  // Apply the best found move
+        while (continueGame == "")
+        {
+            AlphaBeta(mainBoard, depth, alpha, beta, whiteTurn, out Move makeBestMove); // Start the search
 
-        PrintParsedBoard(mainBoard);                         // Print the parsed board
-        eval = Evaluate(mainBoard);                          // Evaluate the new position
-        WriteLine($"\n\t\t\t\tCurrent eval: {eval}\n\n\t");  // Write the eval position value
+            Clear();                                           // Clear the console
+            ApplyMove(mainBoard, makeBestMove);                // Apply the best found move
 
-        EncodeBoard(mainBoard);                              // Print the new board code
-        ReadKey();                                           // Exit the program
+            PrintParsedBoard(mainBoard);                       // Print the parsed board
+            eval = Evaluate(mainBoard, true);                  // Evaluate the new position
+            Write($"\n\t\t\t\tCurrent eval: {eval}\n\n\n\t");  // Write the eval position value
+
+            whiteTurn = !whiteTurn;
+
+            Write("Continue?  (press ENTER): ");
+            continueGame = ReadLine();                         // Wait for when user is ready
+        }
+        EncodeBoard(mainBoard);                                // Print the new board code
+        ReadKey();                                             // Exit the program
     }
 
 
@@ -300,7 +307,9 @@ class Program
 
     private static void PrintParsedBoard(byte[] _board)
     {
-        Write("\n\n\n\n\n\n\t\t\t  Parsed board (in bytes): " + _board.Length + "\n\n\n\t\t\t"); 
+        if (gPieceGotEaten) gPieceGotEaten = false;
+        else Write("\n\n\n");
+            Write("\n\n\n\n\n\n\t\t\t  Parsed board (in bytes): " + _board.Length + "\n\n\n\t\t\t"); 
         if (_board.Length == 64)
         {
             for (int i = 0; i < 64; i++)
@@ -336,6 +345,7 @@ class Program
         {
             // Do the encoding for the optimised board
         }
+        _encodedString = _encodedString.Replace("++++++++", "+++++++=");
         PrintEncodedBoard(_encodedString);
     }
     private static void PrintEncodedBoard(string _encodedBoard)
@@ -345,7 +355,7 @@ class Program
     }
 
 
-    private static int  Evaluate(byte[] _board)
+    private static int  Evaluate(byte[] _board, bool _printInfo)
     {
         // 1. Material balance calculation
         int _material = CalculateMaterial(_board);
@@ -362,7 +372,7 @@ class Program
         // Toral score formula
         int totalScore = _material + _position + _kingSafety + _pawnStructure;
 
-        Write("\n\tMaterial: " + _material + " + Position: " + _position + " + King safety: " + _kingSafety + " + Pawn structure: " + _pawnStructure);
+        if(_printInfo) Write("\n\tMaterial: " + _material + " + Position: " + _position + " + King safety: " + _kingSafety + " + Pawn structure: " + _pawnStructure);
         return totalScore; // Positive score = good for white, negative = good for black
     } // Board evaluation (its OK, but it should definitely be better in the future)
 
@@ -664,7 +674,7 @@ class Program
         }
 
         if (depth == 0) // return eval result after the search ended
-            return Evaluate(board);
+            return Evaluate(board, false);
 
         List<Move> moves = GenerateAllMoves(board, maximizingPlayer);
         if (maximizingPlayer)
@@ -914,15 +924,61 @@ class Program
     }
 
 
-    public static void ApplyMove(byte[] board, Move move)
+    public static void ApplyMove(byte[] _board, Move move)
     {
-        if (board[move.To] != 0)      // If the moved to square is not empty
+        if (_board[move.To] != 0)      // If the moved to square is not empty
         {                             // Print  which piece was captured
-            Write("\n\tFigure " + board[move.To] + " was taken\n\t");
+            Write("\n\n\n\t\t\t   [!]  - ");
+            switch (_board[move.To])
+            {
+                case wp1: 
+                    Write("White pawn"); 
+                    break;
+
+                case wn1:
+                    Write("White knight");
+                    break;
+
+                case wb1:
+                    Write("White bishop");
+                    break;
+
+                case wr1:
+                    Write("White rook");
+                    break;
+
+                case wq1:
+                    Write("White queen");
+                    break;
+
+
+
+                case bp1:
+                    Write("Black pawn");
+                    break;
+
+                case bn1:
+                    Write("Black knight");
+                    break;
+
+                case bb1:
+                    Write("Black bishop");
+                    break;
+
+                case br1:
+                    Write("Black rook");
+                    break;
+
+                case bq1:
+                    Write("Black queen");
+                    break;
+            }
+            Write(" was taken");
+            gPieceGotEaten = true;
         }
 
-        board[move.To] = move.Piece;  // Move  the piece to the new square
-        board[move.From] = 0;         // Clear the previous square
+        _board[move.To] = move.Piece;  // Move  the piece to the new square
+        _board[move.From] = 0;         // Clear the previous square
     }
 
     public static bool GetTurn()
@@ -935,6 +991,21 @@ class Program
         if (_userInput == "w" || _userInput == "y" || _userInput == "yes" || _userInput == "1") 
             return true;  // true  = white's turn
         return false;     // false = black's turn
+    }
+
+    public static int GetDepth()
+    {
+        string _userInput = "";
+        int _depth = -1;
+        Write("Enter the depth for the algorithm search (only from 1 to 6): ");
+        while (_depth < 1 || _depth > 6)
+        {
+            _userInput = ReadLine();
+            Clear();
+            if (!int.TryParse(_userInput, out _depth)) Write("Invalid input, please try again: ");
+            else if (_depth < 1 || _depth > 6) Write("Out of bounds, please enter a valid number from the interval: ");
+        }
+        return _depth;
     }
 }
     
