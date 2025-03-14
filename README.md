@@ -8,13 +8,15 @@ I will be competing with Zephyr against my friend with another engine [Albel-cod
 
 It will be a small program in the beginning, only able to do basic chess engine stuff
 
-But I am planniтg to grow it into a strong chess engine/bot in the future
+But I am planning to grow it into a strong chess engine/bot in the future
 
 
 # Current small plans for the near future for this project:
 - UI will currently be only on english, however I will add russian UI later
 - (+) Make a board parsing function in the console
 - (+) Make an Evaluation function
+- Implement a function that calculates all legitimate moves
+- Make the engine find and remember forced mate sequences
 - Implement an optimised search algorith to calculate the positions
 - Use multithread processing to increase the engines power and time efficiency
 - Make the engine see CheckMates up to 3 full moves as of now
