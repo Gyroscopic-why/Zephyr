@@ -926,59 +926,62 @@ class Program
 
     public static void ApplyMove(byte[] _board, Move move)
     {
-        if (_board[move.To] != 0)      // If the moved to square is not empty
-        {                             // Print  which piece was captured
-            Write("\n\n\n\t\t\t   [!]  - ");
-            switch (_board[move.To])
-            {
-                case wp1: 
-                    Write("White pawn"); 
-                    break;
+        if (move == null) Write("All of one of the players pieces has been captured, wtf is the king :(");
+        else
+        {
+            if (_board[move.To] != 0)      // If the moved to square is not empty
+            {                             // Print  which piece was captured
+                Write("\n\n\n\t\t\t   [!]  - ");
+                switch (_board[move.To])
+                {
+                    case wp1:
+                        Write("White pawn");
+                        break;
 
-                case wn1:
-                    Write("White knight");
-                    break;
+                    case wn1:
+                        Write("White knight");
+                        break;
 
-                case wb1:
-                    Write("White bishop");
-                    break;
+                    case wb1:
+                        Write("White bishop");
+                        break;
 
-                case wr1:
-                    Write("White rook");
-                    break;
+                    case wr1:
+                        Write("White rook");
+                        break;
 
-                case wq1:
-                    Write("White queen");
-                    break;
+                    case wq1:
+                        Write("White queen");
+                        break;
 
 
 
-                case bp1:
-                    Write("Black pawn");
-                    break;
+                    case bp1:
+                        Write("Black pawn");
+                        break;
 
-                case bn1:
-                    Write("Black knight");
-                    break;
+                    case bn1:
+                        Write("Black knight");
+                        break;
 
-                case bb1:
-                    Write("Black bishop");
-                    break;
+                    case bb1:
+                        Write("Black bishop");
+                        break;
 
-                case br1:
-                    Write("Black rook");
-                    break;
+                    case br1:
+                        Write("Black rook");
+                        break;
 
-                case bq1:
-                    Write("Black queen");
-                    break;
+                    case bq1:
+                        Write("Black queen");
+                        break;
+                }
+                Write(" was taken");
+                gPieceGotEaten = true;
             }
-            Write(" was taken");
-            gPieceGotEaten = true;
+            _board[move.To] = move.Piece;  // Move  the piece to the new square
+            _board[move.From] = 0;         // Clear the previous square
         }
-
-        _board[move.To] = move.Piece;  // Move  the piece to the new square
-        _board[move.From] = 0;         // Clear the previous square
     }
 
     public static bool GetTurn()
