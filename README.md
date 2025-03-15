@@ -45,13 +45,22 @@ But I am planning to grow it into a strong chess engine/bot in the future
 ### Delta:
 - Added a move calculation function
 - Added an alpha beta search function, seems to work :D
-- Added a player turn parser
+- Added a start player color parser
 - Added a more clean info
 - Added a board encode function (the opposite of parsing)
 - Now the engine can play a move (and for both player colors!)
 - A bit of UI cleaning
 - Added a temporary placeholder for the mate recognition and saving its sequence
-  (haven't fully tested it but I am like 90% sure it doesn't work as it should)
+  (Yeah it doesn't work)
+
+  ### Delta++:
+  - Fixed the crash when a player can't move for some reason
+  - Massive UI cleaning (although not final)
+  - Added a fen and custom fen board parsing
+  - Added the board encoding in a custom fen
+  - Fixed the king check function (although there are still very specific cases that don't work)
+  - Added an auto new game option
+  - Small optimisation
 
 
 # Info :D
