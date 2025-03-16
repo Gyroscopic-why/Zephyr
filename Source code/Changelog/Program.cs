@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using static System.Console;
 class Program
 {
@@ -67,7 +67,7 @@ class Program
 
     static void Main(string[] args)
     {
-        Title = "Zephyr engine Delta++";              // Set the app title
+        Title = "Zephyr engine Epsilon";                  // Set the app title
         string continueGame = "";
 
         while (continueGame != "exit")
@@ -89,14 +89,20 @@ class Program
             int alpha = int.MinValue;              // Min for the algorithm
             int beta = int.MaxValue;               // Max for the algorithm
 
+            //Stopwatch timeCounter;
+
             while (continueGame == "")
             {
                 AlphaBeta(mainBoard, depth, alpha, beta, whiteTurn, out Move makeBestMove); // Start the search
 
+                //timeCounter = Stopwatch.StartNew();
+                //Write("\tDepth: " + depth + ",\tResult: " + PositionsAmountTest(mainBoard, depth, whiteTurn) + " positions,\t\ttime elapsed: " + timeCounter.ElapsedMilliseconds + " ms");
+                //timeCounter.Stop();
+
                 Clear();                                           // Clear the console
                 ApplyMove(mainBoard, makeBestMove);                // Apply the best found move
 
-                if (makeBestMove != null) PrintParsedBoard(mainBoard, makeBestMove.From, makeBestMove.To);                       // Print the parsed board
+                if (makeBestMove != null) PrintParsedBoard(mainBoard, makeBestMove.From, makeBestMove.To); // Print the parsed board
                 else PrintParsedBoard(mainBoard);
                 
                 eval = Evaluate(mainBoard, true);                  // Evaluate the new position
@@ -104,8 +110,8 @@ class Program
 
                 whiteTurn = !whiteTurn;
 
-                Write("White king in check: " + IsKingInCheck(mainBoard, true));       // Print info
-                Write("\n\tBlack king in check: " + IsKingInCheck(mainBoard, false));  //
+                Write("White king in check: " + IsKingInCheck(mainBoard, true) + ", wkPos: " + wkPos);       // Print info
+                Write("\n\tBlack king in check: " + IsKingInCheck(mainBoard, false) + ", bkPos: " + bkPos);  //
                 Write("\n\n\tContinue?  (press ENTER): ");
                 continueGame = ReadLine().Trim().ToLower();        // Wait for when user is ready
             }
@@ -136,7 +142,7 @@ class Program
                 _encodedBoard += _userInput;
 
                 if (_userInput == "0") _encodedBoard = "rnbqkbnrpppppppp32PPPPPPPPRNBQKBNR";
-                if (_encodedBoard.Length <= 64) _validEncoding = TryParseClassicBoard(_encodedBoard);
+                if (_encodedBoard.Length <= 64) _validEncoding = TryParseClassicBoard(ref _encodedBoard);
                 
                 Write("\t");
             }
@@ -150,7 +156,7 @@ class Program
 
                 else
                 {
-                    if (TryParseClassicBoard(_encodedBoard)) _validEncoding = true;
+                    if (TryParseClassicBoard(ref _encodedBoard)) _validEncoding = true;
                     else Write("\tError while parsing board: unknown character");
                 }
             }
@@ -195,10 +201,10 @@ class Program
         }
         return true;
     } // Needs an update
-    private static bool TryParseClassicBoard(string _encoded)
+    private static bool TryParseClassicBoard(ref string _encoded)
     {
         byte _freeSpaceForFen, _fenOffset = 0;
-        for (byte i = 0; i < _encoded.Length; i++)
+        for (byte i = 0; i < _encoded.Length && i + _fenOffset < 64; i++)
         {
             mainBoard[i + _fenOffset] = ConvertBoardToBytes(_encoded[i], true); // Parse the board piece by piece
             
@@ -216,8 +222,16 @@ class Program
 
                     for (byte j = i; j < _freeSpaceForFen + i; j++)
                     {
-                        mainBoard[i + _fenOffset] = emptySquare;  // Fill empty squares
-                        _fenOffset++;                             // Increase offset for board parsing
+                        if (i + _fenOffset < 64)
+                        {
+                            mainBoard[i + _fenOffset] = emptySquare;  // Fill empty squares
+                            _fenOffset++;                             // Increase offset for board parsing
+                        }
+                        else
+                        {
+                            j += _freeSpaceForFen;
+                            _encoded += "123456789012345678901234567890123456789012345678901234567890123";
+                        }
                     }
                     _fenOffset -= 2;  // Account for the offset of the two chars that was converted to bytes
                     i++;
@@ -227,8 +241,16 @@ class Program
 
                     for (int j = i; j < _freeSpaceForFen + i; j++)
                     {
-                        mainBoard[i + _fenOffset] = emptySquare;  // Fill empty squares
-                        _fenOffset++;                             // Increase offset for board parsing
+                        if(i + _fenOffset < 64)
+                        {
+                            mainBoard[i + _fenOffset] = emptySquare;  // Fill empty squares
+                            _fenOffset++;                             // Increase offset for board parsing
+                        }
+                        else
+                        {
+                            j += _freeSpaceForFen;
+                            _encoded += "123456789012345678901234567890123456789012345678901234567890123";
+                        }
                     }
                     _fenOffset--;
                 }
@@ -371,11 +393,8 @@ class Program
 
                 // Highlight the square were there previously was a piece
                 if (i == _moveFrom) ForegroundColor = ConsoleColor.DarkRed;
-                else if (i == _moveTo) // Highlight the square we the last piece moved
-                {
-                    if (_board[i] < 8) ForegroundColor = ConsoleColor.Green; // Higlight if it was the white player's move
-                    else ForegroundColor = ConsoleColor.Blue;                // Highlight if it was the black player's move
-                }
+                else if (i == _moveTo)
+                ForegroundColor = ConsoleColor.Cyan;  // Highlight the square we the last piece moved
 
                 if (_board[i] > 9) Write(" " + _board[i] + "  ");  // Print alligned grid
                 else Write(" 0" + _board[i] + "  ");               //
@@ -415,6 +434,11 @@ class Program
                 else _emptySquares++; // Count empty squares for the fen
 
             }   // Encode the position char by char
+            if (_emptySquares != 0)
+            {
+                _fen += _emptySquares;
+                _emptySquares = 0;
+            }
         }
         else
         {
@@ -597,10 +621,10 @@ class Program
         }
         return true;
     }
-    private static bool CanAttack(byte[] _board, byte _enemy, byte fromX, byte fromY, byte toX, byte toY)
+    private static bool CanAttack(byte[] _board, byte _enemy, byte _fromX, byte _fromY, byte _toX, byte _toY)
     {
-        int _distX = Math.Abs(toX - fromX);      // Important to note that I store the abs value
-        int _distY = Math.Abs(toY - fromY);      // to reduce the checks needed for the piece attacks (since they are simetrical)
+        int _distX = Math.Abs(_toX - _fromX);      // Important to note that I store the abs value
+        int _distY = Math.Abs(_toY - _fromY);      // to reduce the checks needed for the piece attacks (since they are simetrical)
 
         switch (_enemy)
         {
@@ -614,83 +638,183 @@ class Program
 
             case 3:  // White Bishop
             case 11: // Black Bishop
-                return (_distX == _distY); // Bishops attacks diagonaly
+                if (_distX == _distY) // if the bishop is in diagonal line with our square
+                {
+                    return (!CheckForDiagonalBlocking(_board, _fromX, _fromY, _toX, _toY));
+                    // Bishops attacks diagonaly
+                }
+                return false; // return false if we cant reach the piece
 
             case 4:  // White Rook
             case 12: // Black Rook
-                return (_distX == 0 || _distY == 0); // Rooks attacks vertically or horizontally
+                if (_distX == 0 || _distY == 0)  // if the bishop is in diagonal line with our square
+                {
+                    return !(CheckForVerticalBlocking(_board, _fromY, _toY) ||
+                     CheckForHorizontalBlocking(_board, _fromX, _toX));
+                    // Rooks attacks vertically or horizontally
+                }
+                return false; // return false if we cant reach the piece
 
             case 5:  // White Queen
             case 13: // Black Queen
-                return (_distX == 0 || _distY == 0 || _distX == _distY); // Queens attack like bishops or rooks
+                if (_distX == 0 || _distY == 0 || _distX == _distY)  // If the queen is in line with our square
+                {
+                    return !(CheckForVerticalBlocking(_board, _fromY, _toY) ||
+                     CheckForDiagonalBlocking(_board, _fromX, _fromY, _toX, _toY) ||
+                     CheckForHorizontalBlocking(_board, _fromX, _toX));
+                    // Queens attack like bishops or rooks
+                    // So we check for vertical or diagonal or horizontal blocking
+                }
+                return false; // return false if we cant reach the piece
+                
         }
         return false; // Piece attack logic, true if our square can be attacked, false if it cant
     }
 
+    public static bool CheckForDiagonalBlocking(byte[] _board, byte _fromX, byte _fromY, byte _toX, byte _toY)
+    {
+        for (byte y = Math.Min(_fromY, _toY); y < Math.Max(_fromY, _toY); y++)
+        {
+            for (byte x = Math.Min(_fromX, _toX); x < Math.Max(_fromX, _toX); x++)
+            {
+                if (_board[y * 8 + x] != 0) return true; // Check if the path is obstructed
+            }
+        }
+        return false; // return false = no obstruction so the attack is possible
+    }
 
+    public static bool CheckForVerticalBlocking(byte[] _board, byte _fromY, byte _toY)
+    {
+        for (byte y = Math.Min(_fromY, _toY); y < Math.Max(_fromY, _toY); y++)
+        {
+            if (_board[y * 8] != 0) return true; // Check if the path is obstructed
+        }
+        return false; // return false = no obstruction so the attack is possible
+    }
+
+    public static bool CheckForHorizontalBlocking(byte[] _board, byte _fromX, byte _toX)
+    {
+        for (byte x = Math.Min(_fromX, _toX); x < Math.Max(_fromX, _toX); x++)
+        {
+            if (_board[x] != 0) return true; // Check if the path is obstructed
+        }
+        return false; // return false = no obstruction so the attack is possible
+    }
 
     public class Move
     {
-        public byte  From { get; set; }          // Start position
-        public byte  To { get; set; }            // Destination position
+        public byte From { get; set; }          // Start position
+        public byte To { get; set; }            // Destination position
         public byte Piece { get; set; }         // Moving piece
         public byte CapturedPiece { get; set; } // Captured piece (for display)
     }
 
-    public static List<Move> GenerateAllMoves(byte[] board, bool isWhiteTurn)
+    public static List<Move> GenerateAllMoves(byte[] _thisboard, bool _isWhiteTurn)
     {
-        List<Move> moves = new List<Move>();
+        List<Move> _moves = new List<Move>();
         for (byte i = 0; i < 64; i++)
         {
-            byte piece = board[i];
-            if (piece == 0 || (isWhiteTurn && piece > 8) || (!isWhiteTurn && piece < 9))
-                continue;
-
-            switch (piece)
+            byte _piece = _thisboard[i];
+            if ((_isWhiteTurn && _piece < 8) || (!_isWhiteTurn && _piece > 8))
             {
-                case 1:  // White pawn
-                    GeneratePawnMoves(board, i, true, moves);  // Calculate the moves
-                    break;
+                switch (_piece)
+                {
+                    case 1:  // White pawn
+                    case 9:  // Black pawn
+                        _moves.AddRange(                                                // Thirdly we save all the legal moves
+                            IsMoveLegalNoCheckCriteria(_thisboard,                      // Secondly we kill of the pawn moves where the king is in check
+                            GeneratePawnMoves(_thisboard, i, _isWhiteTurn),             // First we generate all pawn moves
+                            _isWhiteTurn));                                             // King color for the legal checking
+                        break;
+                    case 2:  // White knight
+                    case 10: // Black knight
+                        _moves.AddRange(                                                // Thirdly we save all the legal moves
+                            IsMoveLegalNoCheckCriteria(_thisboard,                      // Secondly we kill of the moves where the king is in check
+                            GenerateKnightMoves(_thisboard, i, _piece, _isWhiteTurn),   // First we generate all knight moves
+                            _isWhiteTurn));                                             // King color for the legal checking
+                        break;
 
-                case 9:  // Black pawn
-                    GeneratePawnMoves(board, i, false, moves); // Calculate the moves
-                    break;
-                case 2:  // White knight
-                case 10: // Black knight
-                    GenerateKnightMoves(board, i, moves); // Calculate the moves
-                    break;
+                    case 3:  // White bishop
+                    case 11: // Black bishop
+                        _moves.AddRange(                                                // Thirdly we save all the legal moves
+                            IsMoveLegalNoCheckCriteria(_thisboard,                      // Secondly we kill of the moves where the king is in check
+                            GenerateBishopMoves(_thisboard, i, _piece, _isWhiteTurn),   // First we generate all bishop moves
+                            _isWhiteTurn));                                             // King color for the legal checking
+                        break;
 
-                case 3:  // White bishop
-                case 11: // Black bishop
-                    GenerateBishopMoves(board, i, moves); // Calculate the moves
-                    break;
+                    case 4:  // White rook
+                    case 12: // Black rook
+                        _moves.AddRange(                                                // Thirdly we save all the legal moves
+                            IsMoveLegalNoCheckCriteria(_thisboard,                      // Secondly we kill of the moves where the king is in check
+                            GenerateRookMoves(_thisboard, i, _piece, _isWhiteTurn),     // First we generate all rook moves
+                            _isWhiteTurn));                                             // King color for the legal checking
+                        break;
 
-                case 4:  // White rook
-                case 12: // Black rook
-                    GenerateRookMoves(board, i, moves);   // Calculate the moves
-                    break;
+                    case 5:  // White queen
+                    case 13: // Black queen
+                        _moves.AddRange(                                                // Thirdly we save all the legal moves
+                             IsMoveLegalNoCheckCriteria(_thisboard,                     // Secondly we kill of the moves where the king is in check
+                             GenerateQueenMoves(_thisboard, i, _piece, _isWhiteTurn),   // First we generate all queen moves
+                             _isWhiteTurn));                                            // King color for the legal checking
+                        break;
 
-                case 5:  // White queen
-                case 13: // Black queen
-                    GenerateQueenMoves(board, i, moves);  // Calculate the moves
-                    break;
-
-                case 6:  // White king
-                case 14: // Black king
-                    GenerateKingMoves(board, i, moves);   // Calculate the moves
-                    break;
+                    case 6:  // White king
+                    case 14: // Black king
+                        _moves.AddRange(                                                // Thirdly we save all the legal moves
+                             IsMoveLegalNoCheckCriteria(_thisboard,                     // Secondly we kill of the moves where the king is in check
+                             GenerateKingMoves(_thisboard, i, _piece, _isWhiteTurn),    // First we generate all king moves
+                             _isWhiteTurn));                                            // King color for the legal checking
+                        break;
+                }
             }
         }
-        return moves;
+        return _moves;
+    }
+    public static List<Move> IsMoveLegalNoCheckCriteria(byte[] _board, List<Move> _moves, bool _isKingWhite)
+    {
+        for(int i = 0; i < _moves.Count; i++)
+        {
+            if (IsKingInCheck(SimulateMove(_board, _moves[i]), _isKingWhite))
+            {
+                _moves.RemoveAt(i);  // Clear the mmoves where the king is still in check
+                i--;                 // Decrease by one so by the end of the loop (i++) we dont hop over a move
+            }
+        }
+
+        return _moves;
+    }
+    
+    
+    public static byte[] SimulateMove(byte[] _oldBoard, Move move)
+    {
+        byte[] _newBoard = (byte[])_oldBoard.Clone();  
+        // Someone explain to me WHY you need to clone this
+        // Because if you dont, the original (_oldBoard) gets changed to _newBoard
+
+        _newBoard[move.To] = move.Piece;   //
+        _newBoard[move.From] = 0;          // Simulating the move
+        return _newBoard;        // Returning the new board with the simulated move
     }
 
-    public static byte[] SimulateMove(byte[] board, Move move)
+    public static int PositionsAmountTest(byte[] _board, int _depth, bool _isWhiteTurn)
     {
-        byte[] newBoard = (byte[])board.Clone();
-        newBoard[move.To] = move.Piece;
-        newBoard[move.From] = 0;
-        return newBoard;
+        if (_depth == 0)
+            return 1;
+
+        List<Move> _moves = GenerateAllMoves(_board, _isWhiteTurn);
+
+        int _amountOfPositions = 0;
+
+        foreach (Move _move in _moves)
+        {
+            //PrintParsedBoard(SimulateMove(_board, _move), _move.From, _move.To);
+            //Write("\nMove from: " + _move.From + " to " + _move.To + ", Piece: " + _move.Piece);
+            _amountOfPositions += PositionsAmountTest(SimulateMove(_board, _move), _depth - 1, !_isWhiteTurn);
+        }
+
+        return _amountOfPositions;
     }
+
 
     public static bool IsKingInCheck(byte[] _board, bool _kingColor)
     {
@@ -702,7 +826,6 @@ class Program
 
         return _isChecked;                 // return the check state
     }
-
     public static bool IsCheckmate(byte[] _board, bool isWhiteTurn)
     {
         // White turn = check for the checking of the white king
@@ -725,27 +848,30 @@ class Program
         return true; // Else if we cant move or block - return checkmate
     }
 
-    public static int  AlphaBeta(byte[] board, int depth, int alpha, int beta, bool maximizingPlayer, out Move bestMove)
+
+
+    public static int  AlphaBeta(byte[] _board, int depth, int alpha, int beta, bool maximizingPlayer, out Move bestMove)
     {
         bestMove = null;
 
         // If checkmate stop calculating
-        if (IsCheckmate(board, !maximizingPlayer))
+        /*if (IsCheckmate(board, !maximizingPlayer))
         {
             // Return checkmate state
             return maximizingPlayer ? int.MinValue + depth : int.MaxValue - depth;
-        }
+        }*/  // The code doesnt work so i removed it to not waste time, however I will fix it later
 
         if (depth == 0) // return eval result after the search ended
-            return Evaluate(board, false);
+            return Evaluate(_board, false);
 
-        List<Move> moves = GenerateAllMoves(board, maximizingPlayer);
+        List<Move> moves = GenerateAllMoves(_board, maximizingPlayer);
         if (maximizingPlayer)
         {
-            int maxEval = int.MinValue;
+            int maxEval = -999999;
             foreach (Move move in moves)
             {
-                byte[] newBoard = SimulateMove(board, move);
+                byte[] newBoard = SimulateMove(_board, move);
+
                 int eval = AlphaBeta(newBoard, depth - 1, alpha, beta, false, out Move currentBestMove);
                 if (eval > maxEval)
                 {
@@ -760,10 +886,10 @@ class Program
         }
         else
         {
-            int minEval = int.MaxValue;
+            int minEval = 999999;
             foreach (Move move in moves)
             {
-                byte[] newBoard = SimulateMove(board, move);
+                byte[] newBoard = SimulateMove(_board, move);
                 int eval = AlphaBeta(newBoard, depth - 1, alpha, beta, true, out Move currentBestMove);
                 if (eval < minEval)
                 {
@@ -777,7 +903,6 @@ class Program
             return minEval;
         }
     }
-
     public static Move FindBestMove(byte[] board, int depth, bool isWhiteTurn)
     {
         Move bestMove = null;
@@ -790,12 +915,12 @@ class Program
             int moveValue = AlphaBeta(newBoard, depth - 1, int.MinValue, int.MaxValue, !isWhiteTurn, out Move currentBestMove);
 
             // Stop the search if we found a forced mate
-            if (isWhiteTurn && moveValue == int.MaxValue - (depth - 1))
+            if (isWhiteTurn && moveValue == 999999)
             {
                 Write("Forced mate was found!\n");
                 return move;
             }
-            else if (!isWhiteTurn && moveValue == int.MinValue + (depth - 1))
+            else if (!isWhiteTurn && moveValue == -999999)
             {
                 Write("Forced mate was found!\n");
                 return move;
@@ -815,7 +940,6 @@ class Program
 
         return bestMove;
     }
-
     public static void PrintMateSequence(byte[] board, bool isWhiteTurn, int depth)
     {
         Move bestMove = FindBestMove(board, depth, isWhiteTurn);
@@ -831,159 +955,237 @@ class Program
 
 
 
-    public static void GeneratePawnMoves(byte[] board, byte position, bool isWhite, List<Move> moves)
+    public static List<Move> GeneratePawnMoves  (byte[] _board, byte _position, bool _isWhite)
     {
-        int direction = isWhite ? -8 : 8;   // Movement direction is different for each players pawns
-        int startRow = isWhite ? 6 : 1;     // First row for counting the double pawn moves
-        int promotionRow = isWhite ? 0 : 7; // Pawn promotion row
+        List<Move> _generatedMoves = new List<Move>();  // We will store the generated moves here
+        
+        int  _direction    = _isWhite ? -8 : 8;         // Movement direction is different for each players pawns
+        byte _startRow     = (byte)(_isWhite ? 6 : 1);  // First row for counting the double pawn moves
+        byte _promotionRow = (byte)(_isWhite ? 0 : 7);  // Pawn promotion row
+        byte _xPos = (byte)(_position % 8);             // Pawn x position
 
         // Basic pawn move
-        byte newPosition = (byte) (position + direction);
-        if (newPosition >= 0 && newPosition < 64 && board[newPosition] == 0)
-        {
-            if (newPosition / 8 == promotionRow)
+        int _newPosition = _position + _direction;
+        if (_newPosition >= 0 && _newPosition < 64 && _board[_newPosition] == 0)
+        {   // Check if we are moving to a valid empty square
+
+            if (_newPosition / 8 == _promotionRow)
             {
                 // Pawn promotion
-                moves.Add(new Move { From = position, To = newPosition, Piece = board[position], CapturedPiece = 0 });
+                _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = 0 });
             }
             else
             {
-                moves.Add(new Move { From = position, To = newPosition, Piece = board[position], CapturedPiece = 0 });
+                _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wp1 : bp1), CapturedPiece = 0 });
             }
 
             // Double move for pawns in the start position
-            if (position / 8 == startRow && board[newPosition + direction] == 0)
+            if (_position / 8 == _startRow && _board[_newPosition + _direction] == 0)
             {
-                moves.Add(new Move { From = position, To = (byte)(newPosition + direction), Piece = board[position], CapturedPiece = 0 });
+                _generatedMoves.Add(new Move { From = _position, To = (byte)(_newPosition + _direction), Piece = _board[_position], CapturedPiece = 0 });
             }
         }
 
         // Diagonal attacks
-        int[] attackOffsets = isWhite ? new int[] { -7, -9 } : new int[] { 7, 9 }; // Offset after attacks
-        foreach (int offset in attackOffsets)
+        if (_xPos > 0)
         {
-            byte attackPosition = (byte)(position + offset);
-            if (attackPosition >= 0 && attackPosition < 64 && Math.Abs((attackPosition % 8) - (position % 8)) == 1)
+            byte _attackPosition = (byte)(_isWhite ? _position - 9 : _position + 7);         // Target position
+            if (_attackPosition >= 0 && _attackPosition < 64)
             {
-                byte targetPiece = board[attackPosition];
-                if (targetPiece != 0 && ((isWhite && targetPiece > 8) || (!isWhite && targetPiece < 9)))
+                byte _target = _board[_attackPosition];                   // Target piece
+                if (_target != 0 && ((_isWhite && _target > 8) || (!_isWhite && _target < 9)))
                 {
-                    if (attackPosition / 8 == promotionRow)
+                    if (_attackPosition / 8 == _promotionRow)
                     {
                         // Check for promotion after attack
-                        moves.Add(new Move { From = position, To = attackPosition, Piece = board[position], CapturedPiece = targetPiece });
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_attackPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = _target });
                     }
                     else
                     {
-                        moves.Add(new Move { From = position, To = attackPosition, Piece = board[position], CapturedPiece = targetPiece });
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_attackPosition, Piece = (byte)(_isWhite ? wp1 : bp1), CapturedPiece = _target });
                     }
                 }
             }
         }
-    }
-
-    public static void GenerateKnightMoves(byte[] board, byte position, List<Move> moves)
-    {
-        int[] knightOffsets = { -17, -15, -10, -6, 6, 10, 15, 17 }; // All possible knight moves
-        byte piece = board[position];
-        bool isWhite = piece < 9;
-
-        foreach (int offset in knightOffsets)
+        if (_xPos < 7)
         {
-            byte newPosition = (byte)(position + offset);
-            if (newPosition >= 0 && newPosition < 64 && Math.Abs((newPosition % 8) - (position % 8)) <= 2)
+            byte _attackPosition = (byte)(_isWhite ? _position - 7 : _position + 9);         // Target position
+            if (_attackPosition >= 0 && _attackPosition < 64)
             {
-                byte targetPiece = board[newPosition];
-                if (targetPiece == 0 || (isWhite && targetPiece > 8) || (!isWhite && targetPiece < 9))
+                byte _target = _board[_attackPosition];                   // Target piece
+                if (_target != 0 && ((_isWhite && _target > 8) || (!_isWhite && _target < 9)))
                 {
-                    moves.Add(new Move { From = position, To = newPosition, Piece = piece, CapturedPiece = targetPiece });
-                }
-            }
-        }
-    }
-
-    public static void GenerateBishopMoves(byte[] board, byte position, List<Move> moves)
-    {
-        int[] bishopOffsets = { -9, -7, 7, 9 }; // Diagonal moves
-        byte piece = board[position];
-        bool isWhite = piece < 9;
-
-        foreach (int offset in bishopOffsets)
-        {
-            byte newPosition = (byte)(position + offset);
-            while (newPosition >= 0 && newPosition < 64 && Math.Abs((newPosition % 8) - (position % 8)) == Math.Abs((newPosition / 8) - (position / 8)))
-            {
-                byte targetPiece = board[newPosition];
-                if (targetPiece == 0)
-                {
-                    moves.Add(new Move { From = position, To = newPosition, Piece = piece, CapturedPiece = 0 });
-                }
-                else
-                {
-                    if ((isWhite && targetPiece > 8) || (!isWhite && targetPiece < 9))
+                    if (_attackPosition / 8 == _promotionRow)
                     {
-                        moves.Add(new Move { From = position, To = newPosition, Piece = piece, CapturedPiece = targetPiece });
+                        // Check for promotion after attack
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_attackPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = _target });
                     }
-                    break; // if a piece is found
-                }
-                newPosition += (byte) offset;
-            }
-        }
-    }
-
-    public static void GenerateRookMoves(byte[] board, byte position, List<Move> moves)
-    {
-        int[] rookOffsets = { -8, -1, 1, 8 }; // Horizontal and vertical rook offsets
-        byte piece = board[position];
-        bool isWhite = piece < 9;
-
-        foreach (int offset in rookOffsets)
-        {
-            byte newPosition = (byte)(position + offset);
-            while (newPosition >= 0 && newPosition < 64 && (offset == 8 || offset == -8 || (newPosition / 8 == position / 8)))
-            {
-                byte targetPiece = board[newPosition];
-                if (targetPiece == 0)
-                {
-                    moves.Add(new Move { From = position, To = newPosition, Piece = piece, CapturedPiece = 0 });
-                }
-                else
-                {
-                    if ((isWhite && targetPiece > 8) || (!isWhite && targetPiece < 9))
+                    else
                     {
-                        moves.Add(new Move { From = position, To = newPosition, Piece = piece, CapturedPiece = targetPiece });
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_attackPosition, Piece = (byte)(_isWhite ? wp1 : bp1), CapturedPiece = _target });
                     }
-                    break; // if a piece is found
                 }
-                newPosition += (byte)offset;
             }
         }
-    }
 
-    public static void GenerateQueenMoves(byte[] board, byte position, List<Move> moves)
-    {                                                // The queen is literally just a rook + bishop
-        GenerateBishopMoves(board, position, moves); // Diagonal
-        GenerateRookMoves(board, position, moves);   // Horizontal and vertical
+        return _generatedMoves;
     }
-
-    public static void GenerateKingMoves(byte[] board, byte position, List<Move> moves)
+    public static List<Move> GenerateKnightMoves(byte[] _board, byte _position, byte _piece, bool _isWhite)
     {
-        int[] kingOffsets = { -9, -8, -7, -1, 1, 7, 8, 9 }; // All posible king moves
-        byte piece = board[position];
-        bool isWhite = piece < 9;
+        List<Move> _moves = new List<Move>();            // We will store the generated moves here
+        int[] _knightOffsets = { -10, 6, -17, 15, -15, 17, -6, 10 };  // All possible knight moves
+        byte _xPos = (byte)(_position % 8);                               // The knight x position
 
-        foreach (int offset in kingOffsets)
+        for(int i = 0; i < 8; i++)                          // For each square that we can move to
         {
-            byte newPosition = (byte)(position + offset);
-            if (newPosition >= 0 && newPosition < 64 && Math.Abs((newPosition % 8) - (position % 8)) <= 1)
-            {
-                byte targetPiece = board[newPosition];
-                if (targetPiece == 0 || (isWhite && targetPiece > 8) || (!isWhite && targetPiece < 9))
-                {
-                    moves.Add(new Move { From = position, To = newPosition, Piece = piece, CapturedPiece = targetPiece });
+            if ((i < 2 && _xPos > 1) || (i > 1 && i < 4 && _xPos > 0) || (i > 3 && i < 6 && _xPos < 7) || (i > 5 && _xPos < 6))
+            {   // Prevent the knight from looping around the board (optimised checking)
+
+                int _newPosition = _position + _knightOffsets[i]; //   New position for the knight
+
+                if (_newPosition >= 0 && _newPosition < 64)       // If the square is on the board
+                {   
+                    byte _target = _board[_newPosition];          //   Target piece
+
+                    if (_target == 0 || (_isWhite && _target > 8) || (!_isWhite && _target < 8))
+                    {   // If we are moving to an empty square, or we are capturing a piece of the opposite color
+
+                        // Save the generated move
+                        _moves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = _piece, CapturedPiece = _target });
+                    }
                 }
             }
         }
+        return _moves;  // Return all possible moves
+    }
+    public static List<Move> GenerateBishopMoves(byte[] _board, byte _position, byte _piece, bool _isWhite)
+    {
+        List<Move> _generatedMoves = new List<Move>();   // We will store the generated moves here
+        int[] _bishopOffsets = { -9, 7, -7, 9 };         // Diagonal moves (1 iteration)
+        byte _xPos = (byte)(_position % 8);                         // Bishop x position
+        
+        for (int i = 0; i < 4; i++)                        // For each square that we can move to
+        {
+            if ((i < 2 && _xPos > 0) || (i > 1 && _xPos < 7))
+            {   // Prevent the bishop from looping around the board (optimised checking)
+
+                int _newPosition = _position + _bishopOffsets[i];       // Choose a new direction
+
+                while (_newPosition >= 0 && _newPosition < 64)
+                {   // If the square is on the board, and we moved in a single diagonal direction
+                    
+                    byte _target = _board[_newPosition];                          // Target piece
+                    if (_target == 0)                      // If we are moving to an empty square
+                    {
+                        // Save the move, captured piece = none (empty = 0)
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = _piece, CapturedPiece = 0 });
+                    }
+                    else    // If we are blocked by a piece
+                    {
+                        if ((_isWhite && _target > 8) || (!_isWhite && _target < 9))  // If we are blocked by an enemy piece
+                        {
+                            // Save the move with capturing an enemy piece
+                            _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = _piece, CapturedPiece = _target });
+                        }
+                        break;  // if a piece is blocking us stop moving further
+                    }
+
+                    _xPos = (byte)(_newPosition % 8);                    // Bishop new x position
+
+                    if ((i < 2 && _xPos > 0) || (i > 1 && _xPos < 7))
+                    {   // Prevent the bishop from looping around the board (optimised checking)
+
+                        _newPosition += _bishopOffsets[i]; // Continue moving diagonally in that direction
+                    }
+                    else _newPosition = 64;                                    // Break but more efficient
+                }
+            }
+        }
+
+        return _generatedMoves;  // return the generated moves
+    }
+    public static List<Move> GenerateRookMoves  (byte[] _board, byte _position, byte _piece, bool _isWhite)
+    {
+        List<Move> _generatedMoves = new List<Move>();  // We will store the generated moves here
+        int[] _rookOffsets = { -1, -8, 8, 1 };          // Horizontal (-1, 1) and vertical (-8, 8) rook moves (1 iteration)
+        byte _xPos = (byte)(_position % 8);             // Rook x position
+
+        for (int i = 0; i < 4; i++)
+        {
+            if ((i < 1 && _xPos > 0) || i == 1 || i == 2 || (i > 2 && _xPos < 7))
+            {   // Prevent the rook from looping around the board (optimised checking)
+
+                int _newPosition = _position + _rookOffsets[i];   // Choose a new diagonal direction for moving
+                while (_newPosition >= 0 && _newPosition < 64)
+                {
+                    byte _target = _board[_newPosition];  // Target piece
+                    if (_target == 0)                     // If we are moving to an empty square
+                    {
+                        // Save the move, captured piece = none (empty = 0)
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = _piece, CapturedPiece = 0 });
+                    }
+                    else  // If we are blocked by a piece
+                    {
+                        if ((_isWhite && _target > 8) || (!_isWhite && _target < 9)) // If we are blocked by an enemy piece
+                        {
+                            // Save the move with capturing an enemy piece
+                            _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = _piece, CapturedPiece = _target });
+                        }
+                        break; // if a piece is blocking us stop moving further
+                    }
+
+                    _xPos = (byte)(_newPosition % 8);                   // Rook new x position
+
+                    if ((i < 1 && _xPos > 0) || i == 1 || i == 2 || (i > 2 && _xPos < 7))
+                    {   // Prevent the rook from looping around the board (optimised checking)
+
+                        _newPosition += _rookOffsets[i];  // Continue moving in that direction
+                    }
+                    else _newPosition = 64;
+                }
+            }
+        }
+        return _generatedMoves;  // return the generated moves
+    }
+    public static List<Move> GenerateQueenMoves (byte[] _board, byte _position, byte _piece, bool _isWhite)
+    {
+        List<Move> _generatedMoves = new List<Move>();
+
+        // The queen is literally just a rook + bishop
+        // So we calculate as if the piece is a bishop or a rook and add all moves together
+        _generatedMoves = GenerateBishopMoves(_board, _position, _piece, _isWhite);          // Diagonal
+        _generatedMoves.AddRange(GenerateRookMoves  (_board, _position, _piece, _isWhite));  // Horizontal and vertical
+
+        return _generatedMoves;  // Return generated moves
+    }
+    public static List<Move> GenerateKingMoves  (byte[] _board, byte _position, byte _piece, bool _isWhite)
+    {
+        List<Move> _generatedMoves = new List<Move>();        // We will store the generated moves here
+        int[] _kingOffsets = { -9, -1, 7, -8, 8, -7, 1, 9 };  // All posible king moves
+        byte _xPos = (byte)(_position % 8);                   // King x position
+
+        for (int i = 0; i < 8; i++)                 // For each square that we can move to
+        {
+            if ((i < 3 && _xPos > 0) || (i > 4 && i < 8 && _xPos < 7) || i == 3 || i == 4)
+            {   // Prevent the king from looping around the board     (optimised checking)
+
+                int _newPosition = _position + _kingOffsets[i];
+                if (_newPosition >= 0 && _newPosition < 64)
+                {   // If the square on the board, and we moved in a single diagonal direction
+                    // Additional check to prevent moving out of range (useless ? I commented it temporary, probably remove it)
+
+
+                    byte _target = _board[_newPosition];  // Target piece
+                    if (_target == 0 || (_isWhite && _target > 8) || (!_isWhite && _target < 9))
+                    {   // If we are moving to an empty square, or we are capturing a piece of the opposite color
+
+                        // Save the generated move
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = _piece, CapturedPiece = _target });
+                    }
+                }
+            }
+        }
+        return _generatedMoves;  // Return the generated moves;
     }
 
 
@@ -993,7 +1195,7 @@ class Program
         else
         {
             if (_board[move.To] != 0)      // If the moved to square is not empty
-            {                             // Print  which piece was captured
+            {                              // Print  which piece was captured
                 Write("\n\n\n\t\t\t   [!]  - ");
                 switch (_board[move.To])
                 {
@@ -1044,9 +1246,12 @@ class Program
             }
             _board[move.To] = move.Piece;  // Move  the piece to the new square
             _board[move.From] = 0;         // Clear the previous square
+
+            // If the moved piece was the king
+            if (move.Piece == 6)       wkPos = move.To;  // Save the new white king position
+            else if (move.Piece == 14) bkPos = move.To;  // Save the new black king position
         }
     }
-
     public static bool GetTurn()
     {
         string _userInput = "";
@@ -1058,7 +1263,6 @@ class Program
             return true;  // true  = white's turn
         return false;     // false = black's turn
     }
-
     public static int GetDepth()
     {
         string _userInput = "";
