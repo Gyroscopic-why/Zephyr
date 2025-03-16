@@ -62,6 +62,17 @@ But I am planning to grow it into a strong chess engine/bot in the future
   - Added an auto new game option
   - Small optimisation
 
+### Epsilon:
+- Added a check detection
+- Fixed a lot of movement bug with clipping through pieces
+- Move generation optimisation
+- Board parsing bug fixed
+- Board Fen encoding bug fixed
+- Now pawns that reach the final promotion rank transform into queens instead of sitting there
+- Added a position benchmark test (only in the code as a function)
+- Added a verification of the generated moves = if they still leave the king in a check they are disqualified as being valid
+- Fixed bug where if the king was in check he could play other moves (now the player doesnt move at all lol, but still better)
+- Found a new bug (?) (line 790 in my program) where if you remove the .Clone() parameter it for some reason changes the initial array
 
 # Info :D
 ### 12.3.2025 - renaimed the project from _Gymat_ to _Zephyr_, 
