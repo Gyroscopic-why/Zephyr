@@ -73,6 +73,13 @@ But I am planning to grow it into a strong chess engine/bot in the future
 - Added a verification of the generated moves = if they still leave the king in a check they are disqualified as being valid
 - Fixed bug where if the king was in check he could play other moves (now the player doesnt move at all lol, but still better)
 
+### Epsilon+:
+- Fixed incorrect error display in the board parsing function
+- Fixed the app freeze in the board parsing function
+- Fixed the app crash after typed some very specific input in the board parsing function
+- Fixed the apying on the dynamic king position
+- Fixed the inabillity of a player to move if he is in check
+- Fixed the ability to move your pieces that are pinned to the king
 
 # Info :D
 ### 12.3.2025 - renaimed the project from _Gymat_ to _Zephyr_, 
