@@ -67,7 +67,7 @@ class Program
 
     static void Main(string[] args)
     {
-        Title = "Zephyr engine Epsilon";                  // Set the app title
+        Title = "Zephyr engine Epsilon+";                  // Set the app title
         string continueGame = "";
 
         while (continueGame != "exit")
@@ -98,6 +98,7 @@ class Program
                 //timeCounter = Stopwatch.StartNew();
                 //Write("\tDepth: " + depth + ",\tResult: " + PositionsAmountTest(mainBoard, depth, whiteTurn) + " positions,\t\ttime elapsed: " + timeCounter.ElapsedMilliseconds + " ms");
                 //timeCounter.Stop();
+                //depth++;
 
                 Clear();                                           // Clear the console
                 ApplyMove(mainBoard, makeBestMove);                // Apply the best found move
@@ -110,8 +111,8 @@ class Program
 
                 whiteTurn = !whiteTurn;
 
-                Write("White king in check: " + IsKingInCheck(mainBoard, true) + ", wkPos: " + wkPos);       // Print info
-                Write("\n\tBlack king in check: " + IsKingInCheck(mainBoard, false) + ", bkPos: " + bkPos);  //
+                Write("White king in check: " + IsKingInCheck(mainBoard, wkPos, true) + ", wkPos: " + wkPos);       // Print info
+                Write("\n\tBlack king in check: " + IsKingInCheck(mainBoard, bkPos, false) + ", bkPos: " + bkPos);  //
                 Write("\n\n\tContinue?  (press ENTER): ");
                 continueGame = ReadLine().Trim().ToLower();        // Wait for when user is ready
             }
@@ -134,7 +135,7 @@ class Program
         while (!_validEncoding)
         {
             _encodedBoard = "";
-            Write("\n\tEnter the board (64 characters): (SP: rnbqkbnrpppppppp32PPPPPPPPRNBQKBNR)\n\t");
+            Write("\n\tEnter the board (64 characters): (SP: 0 / rnbqkbnrpppppppp32PPPPPPPPRNBQKBNR)\n\t");
 
             while (_encodedBoard.Length < 64 && !_validEncoding)
             {
@@ -142,7 +143,21 @@ class Program
                 _encodedBoard += _userInput;
 
                 if (_userInput == "0") _encodedBoard = "rnbqkbnrpppppppp32PPPPPPPPRNBQKBNR";
-                if (_encodedBoard.Length <= 64) _validEncoding = TryParseClassicBoard(ref _encodedBoard);
+                if (_encodedBoard.Length <= 64)
+                {
+                    if (TryParseClassicBoard(ref _encodedBoard)) _validEncoding = true;
+                    else if (_encodedBoard.Length > 63)
+                    {
+                        Clear();
+                        Write("\t[!]  - Error while parsing board: to many characters\n");
+                    }
+                    else
+                    {
+                        Clear();
+                        Write("\t[!]  - Error while parsing board: unknown character\n");
+                        _encodedBoard += "12345678901234567890123456789012345678901234567890123456789012345";
+                    }
+                }
                 
                 Write("\t");
             }
@@ -157,10 +172,13 @@ class Program
                 else
                 {
                     if (TryParseClassicBoard(ref _encodedBoard)) _validEncoding = true;
-                    else Write("\tError while parsing board: unknown character");
+                    else
+                    {
+                        Clear();
+                        Write("\t[!]  - Error while parsing board: unknown character\n");
+                    }
                 }
             }
-            else if (!_validEncoding) Write("\tError while parsing board: to many characters");
         }
 
 
@@ -203,67 +221,75 @@ class Program
     } // Needs an update
     private static bool TryParseClassicBoard(ref string _encoded)
     {
-        byte _freeSpaceForFen, _fenOffset = 0;
-        for (byte i = 0; i < _encoded.Length && i + _fenOffset < 64; i++)
+        byte _fenOffset = 0;
+        for (byte i = 0; i < _encoded.Length; i++)
         {
-            mainBoard[i + _fenOffset] = ConvertBoardToBytes(_encoded[i], true); // Parse the board piece by piece
-            
-            if (mainBoard[i + _fenOffset] == decodingError) // If encountored an unknown character
+            if (i + _fenOffset < 64)
             {
-                string _temp = "";
-                if (i < _encoded.Length - 1)      // Prevent index out of range 
+                mainBoard[i + _fenOffset] = ConvertBoardToBytes(_encoded[i], true); // Parse the board piece by piece
+
+                if (mainBoard[i + _fenOffset] == decodingError) // If encountored an unknown character
                 {
-                    _temp += _encoded[i];     // Temporary string to stop the strange parsing errors:
-                    _temp += _encoded[i + 1]; // (if you only add .ToString() to the byte.TryParse later)
-                }
-                
-                if (byte.TryParse(_temp, out _freeSpaceForFen))
-                {   // Check for custom short fen - fen number confirmed
-
-                    for (byte j = i; j < _freeSpaceForFen + i; j++)
+                    string _temp = "";
+                    if (i < _encoded.Length - 1)      // Prevent index out of range 
                     {
-                        if (i + _fenOffset < 64)
-                        {
-                            mainBoard[i + _fenOffset] = emptySquare;  // Fill empty squares
-                            _fenOffset++;                             // Increase offset for board parsing
-                        }
-                        else
-                        {
-                            j += _freeSpaceForFen;
-                            _encoded += "123456789012345678901234567890123456789012345678901234567890123";
-                        }
+                        _temp += _encoded[i];     // Temporary string to stop the strange parsing errors:
+                        _temp += _encoded[i + 1]; // (if you only add .ToString() to the byte.TryParse later)
                     }
-                    _fenOffset -= 2;  // Account for the offset of the two chars that was converted to bytes
-                    i++;
-                }
-                else if (byte.TryParse(_encoded[i].ToString(), out _freeSpaceForFen))
-                {   // Check for Fen char - Fen char confirmed
 
-                    for (int j = i; j < _freeSpaceForFen + i; j++)
-                    {
-                        if(i + _fenOffset < 64)
+                    if (byte.TryParse(_temp, out byte _freeSpaceForFen))
+                    {   // Check for custom short fen - fen number confirmed
+
+                        for (byte j = i; j < _freeSpaceForFen + i; j++)
                         {
-                            mainBoard[i + _fenOffset] = emptySquare;  // Fill empty squares
-                            _fenOffset++;                             // Increase offset for board parsing
+                            if (i + _fenOffset < 64)
+                            {
+                                mainBoard[i + _fenOffset] = emptySquare;  // Fill empty squares
+                                _fenOffset++;                             // Increase offset for board parsing
+                            }
+                            else
+                            {
+                                j += _freeSpaceForFen;
+                                _encoded += "123456789012345678901234567890123456789012345678901234567890123";
+                            }
                         }
-                        else
-                        {
-                            j += _freeSpaceForFen;
-                            _encoded += "123456789012345678901234567890123456789012345678901234567890123";
-                        }
+                        _fenOffset -= 2;  // Account for the offset of the two chars that was converted to bytes
+                        i++;
                     }
-                    _fenOffset--;
-                }
-                else return false;       // Return parsing error if the charcter is invalid
-            }
+                    else if (byte.TryParse(_encoded[i].ToString(), out _freeSpaceForFen))
+                    {   // Check for Fen char - Fen char confirmed
 
-            if (mainBoard[i + _fenOffset] == 6)   // If the parsed piece is the white king
-            {
-                wkPos = (byte) (i + _fenOffset);  // Save the white king position
+                        for (int j = i; j < _freeSpaceForFen + i; j++)
+                        {
+                            if (i + _fenOffset < 64)
+                            {
+                                mainBoard[i + _fenOffset] = emptySquare;  // Fill empty squares
+                                _fenOffset++;                             // Increase offset for board parsing
+                            }
+                            else
+                            {
+                                j += _freeSpaceForFen;
+                                _encoded += "123456789012345678901234567890123456789012345678901234567890123";
+                            }
+                        }
+                        _fenOffset--;
+                    }
+                    else return false;       // Return parsing error if the charcter is invalid
+                }
+
+                if (mainBoard[i + _fenOffset] == 6)   // If the parsed piece is the white king
+                {
+                    wkPos = (byte)(i + _fenOffset);  // Save the white king position
+                }
+                if (mainBoard[i + _fenOffset] == 14)  // If the parsed piece is the black king
+                {
+                    bkPos = (byte)(i + _fenOffset);  // Save the black king position
+                }
             }
-            if (mainBoard[i + _fenOffset] == 14)  // If the parsed piece is the black king
+            else
             {
-                bkPos = (byte) (i + _fenOffset);  // Save the black king position
+                i += 128;
+                _encoded += "123456789012345678901234567890123456789012345678901234567890123";
             }
         }
         if (_encoded.Length + _fenOffset != 64) return false; // If the full board isnt filled return error
@@ -774,7 +800,7 @@ class Program
     {
         for(int i = 0; i < _moves.Count; i++)
         {
-            if (IsKingInCheck(SimulateMove(_board, _moves[i]), _isKingWhite))
+            if (IsKingInCheck(SimulateMove(_board, _moves[i]), 64, _isKingWhite))
             {
                 _moves.RemoveAt(i);  // Clear the mmoves where the king is still in check
                 i--;                 // Decrease by one so by the end of the loop (i++) we dont hop over a move
@@ -816,17 +842,39 @@ class Program
     }
 
 
-    public static bool IsKingInCheck(byte[] _board, bool _kingColor)
+    public static bool IsKingInCheck(byte[] _board, byte _kingPos, bool _kingColor)
     {
-        bool _isChecked = false;             // king is not in check
-        byte _kingPos = _kingColor ? wkPos : bkPos;
-
-        if (CountAttacks(_board, _kingPos, _kingColor) > 0) _isChecked = true; 
+        if(_kingPos == 64)  // If the king position is unknown (for example we are simulating a move) we need to find the king
+        {
+            if (_kingColor)
+            {
+                for (byte i = 0; i < 64; i++)
+                {
+                    if (_board[i] == 6)          //
+                    {                            //
+                        _kingPos = i;            // Found the white king
+                        i += 64;                 //
+                    }
+                }
+            }
+            else
+            {
+                for (byte i = 0; i < 64; i++)
+                {
+                    if (_board[i] == 14)          //
+                    {                             //
+                        _kingPos = i;             // Found the black king
+                        i += 64;                  //
+                    }
+                }
+            }
+        }
+        if (CountAttacks(_board, _kingPos, _kingColor) > 0) return true; // return that the king is in check
             // If there is at least one attack, the king is in check
 
-        return _isChecked;                 // return the check state
+        return false;                 // return that the king is not in check
     }
-    public static bool IsCheckmate(byte[] _board, bool isWhiteTurn)
+    /*public static bool IsCheckmate(byte[] _board, bool isWhiteTurn)
     {
         // White turn = check for the checking of the white king
 
@@ -846,7 +894,7 @@ class Program
         }
 
         return true; // Else if we cant move or block - return checkmate
-    }
+    }*/
 
 
 
@@ -1275,6 +1323,7 @@ class Program
             if (!int.TryParse(_userInput, out _depth)) Write("\tInvalid input, please try again: ");
             else if (_depth < 1 || _depth > 6) Write("\tOut of bounds, please enter a valid number from the interval: ");
         }
+        Write("\n");
         return _depth;
     }
 }
