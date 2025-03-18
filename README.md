@@ -81,6 +81,24 @@ But I am planning to grow it into a strong chess engine/bot in the future
 - Fixed the inabillity of a player to move if he is in check
 - Fixed the ability to move your pieces that are pinned to the king
 
+### Zeta:
+- Advanced board evaluation (Now the engine is not only more smart, but also more agressive):
+     - Better material score value calculation
+     - Now the engine considers a piece position as an extra factor
+     - Piece position tables chage to a version 2 when we reach endgame
+       (+ Endgame detection)
+     - Consideration of open files:
+     -      Recognising open files
+     -      Bonus for taking advantage of the open files
+     -      Punishment for not using the open file
+     -  Bonus for simplified center control calculation   (still)
+     -  Bonus for simplified pawn structure calculation   (still)
+     -  Bonus for very simplified king safety calculation (still)
+- Pawns can now promote into any piece (not only the queen)
+- Fixed a lot of small bugs
+- Removed old stuff
+
+  
 # Info :D
 ### 12.3.2025 - renaimed the project from _Gymat_ to _Zephyr_, 
 
