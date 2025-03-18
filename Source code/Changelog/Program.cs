@@ -44,17 +44,25 @@ class Program
     // But I still should improve this
 
     // Material value constants
-    private const int pVal = 100; // Pawn   value
-    private const int nVal = 300; // kNight value
-    private const int bVal = 321; // Bishop value
-    private const int rVal = 500; // Rook   value
-    private const int qVal = 900; // Queen  value
+    private const int pVal = 101;    // Pawn   value
+    private const int nVal = 300;    // kNight value
+    private const int bVal = 321;    // Bishop value
+    private const int rVal = 500;    // Rook   value
+    private const int qVal = 915;    // Queen  value
+    private const int kVal = 10000;  // King val
 
-    // Additional factors for evaluating the position
-    private const int centerControlPriority = 4 ;
-    private const int kingSafetyPriority    = 40 ;
-    private const int pieceActivityPriority = 5  ;
-    private const int pawnStructurePriority = 15 ;
+    // Additional factors for evaluating the position  //
+    private const int rookOpenFileBonus         = 30    ;
+    private const int queenOpenFileBonus        = 25    ;
+    private const int openFileNotUsedPunishment = -5    ;
+
+    private const int centerControlPriority     = 1     ;
+    private const int enemyInCheckPriority      = 150   ;
+    private const int piecePositionPriority     = 1    ;
+    private const int kingSafetyPriority        = 40    ;
+    private const int pieceActivityPriority     = 5     ;
+    private const int pawnStructurePriority     = 15    ;
+    //-------------------------------------------------//
 
 
     // 32byte optimised board and 64 classic board are stored here
@@ -67,7 +75,7 @@ class Program
 
     static void Main(string[] args)
     {
-        Title = "Zephyr engine Epsilon+";                  // Set the app title
+        Title = "Zephyr engine Zeta";                  // Set the app title
         string continueGame = "";
 
         while (continueGame != "exit")
@@ -79,7 +87,7 @@ class Program
             Clear();                                      // Clear the console
             PrintParsedBoard(mainBoard);                  // Print the parsed board
 
-            int eval = Evaluate(mainBoard, true);         // Evaluate the start board position
+            int eval = AdvEvaluate(mainBoard, true);         // Evaluate the start board position
             Write($"\n\t\t\t\tCurrent eval: {eval}\n\t"); // Write the start board position eval result
 
             continueGame = ReadLine();             // Wait for when user is ready
@@ -106,7 +114,7 @@ class Program
                 if (makeBestMove != null) PrintParsedBoard(mainBoard, makeBestMove.From, makeBestMove.To); // Print the parsed board
                 else PrintParsedBoard(mainBoard);
                 
-                eval = Evaluate(mainBoard, true);                  // Evaluate the new position
+                eval = AdvEvaluate(mainBoard, true);                  // Evaluate the new position
                 Write($"\n\t\t\t\tCurrent eval: {eval}\n\n\n\t");  // Write the eval position value
 
                 whiteTurn = !whiteTurn;
@@ -479,13 +487,13 @@ class Program
         Write("\n\tCustom fen board code: " + _boardFen + "\n\n\n");
     }
 
-    private static int  Evaluate(byte[] _board, bool _printInfo)
+    /*private static int  Evaluate(byte[] _board, bool _printInfo)
     {
         // 1. Material balance calculation
         int _material = CalculateMaterial(_board);
 
         // 2. Position balance calculation
-        int _position = CalculateCentralControl(_board);
+        int _position = CalculateCenterControl(_board);
 
         // 3. King safety 
         int _kingSafety = CalculateKingSafety(_board);
@@ -498,9 +506,352 @@ class Program
 
         if(_printInfo) Write("\n\tMaterial: " + _material + " + Position: " + _position + " + King safety: " + _kingSafety + " + Pawn structure: " + _pawnStructure);
         return totalScore; // Positive score = good for white, negative = good for black
-    } // Board evaluation (its OK, but it should definitely be better in the future)
+    } // Board evaluation (its OK, but it should definitely be better in the future)*/
 
-    private static int  CalculateMaterial(byte[] _board)
+    private static int  AdvEvaluate(byte[] _board, bool _isWhite)
+    {
+        // START Positional values for each piece //
+        int[] STARTpawnTable = {
+         0,   0,   0,   0,   0,   0,   0,   0,
+        80,  80,  80,  70,  70,  80,  80,  80,
+        20,  20,  30,  30,  30,  30,  20,  20,
+        10,  10,  20,  30,  30,  20,  10,  10,
+         0,   0,   5,  30,  30,   5,   0,   0,
+         0,   5,   0,   5,   5,   0,   5,   0,
+        10,  10,   5, -20, -20,   5,  10,  10,
+         0,   0,   0,   0,   0,   0,   0,   0
+    };                //
+        int[] STARTknightTable = {
+        -50, -40, -30, -30, -30, -30, -40, -50,
+        -41, -20,   0,   5,   5,   0, -20, -41,
+        -30,   0,  20,  25,  25,  20,   0, -30,
+        -30,   5,  25,  35,  35,  25,   5, -30,
+        -30,   0,  25,  35,  35,  25,   0, -30,
+        -30,   5,  20,  25,  25,  20,   5, -30,
+        -51, -20,   0,   5,   5,   0, -20, -51,
+        -50, -50, -30, -30, -30, -30, -50, -50
+    };              //
+        int[] STARTbishopTable = {
+        -25, -10, -10, -10, -10, -10, -10, -25,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,  10,  15,  15,  10,   0, -10,
+        -10,   5,  15,  20,  20,  15,   5, -10,
+        -10,   0,  15,  20,  20,  15,   0, -10,
+        -10,   5,  10,  15,  15,  10,   5, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -25, -10, -10, -10, -10, -10, -10, -25
+    };              //
+        int[] STARTrookTable = {
+          0,   0,   0,   0,   0,   0,   0,   0,
+         10,  20,  20,  20,  20,  20,  20,  10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+          0,   0,   0,  10,  10,   0,   0,   0
+    };                //
+        int[] STARTqueenTable = {
+        -20, -10, -10,  -5,  -5, -10, -10, -20,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,  10,  10,  10,  10,   0, -10,
+         -5,   0,  10,  15,  15,  10,   0,  -5,
+          0,   0,  10,  15,  15,  10,   0,  -5,
+        -10,   5,  10,  10,  10,  10,   0, -10,
+        -10,   0,   5,   0,   0,   0,   0, -10,
+        -20, -10, -10,  -5,  -5, -10, -10, -20
+    };               //
+        int[] STARTkingTable = {
+        -30, -40, -40, -50, -50, -40, -40, -30,
+        -30, -40, -40, -50, -50, -40, -40, -30,
+        -30, -40, -40, -50, -50, -40, -40, -30,
+        -30, -40, -40, -50, -50, -40, -40, -30,
+        -20, -30, -30, -40, -40, -30, -30, -20,
+        -10, -20, -20, -20, -20, -20, -20, -10,
+         20,  20,   0,   0,   0,   0,  20,  20,
+         20,  30,  10,   0,   0,  10,  30,  20
+    };                //
+        //----------------------------------------//
+
+        // END Positional values for each piece //
+        int[] ENDpawnTable = {
+         0,    0,   0,   0,   0,   0,   0,   0,
+        70,   60,  55,  50,  50,  55,  60,  70,
+        20,   20,  30,  30,  30,  30,  20,  20,
+        10,   10,  20,  20,  20,  20,  10,  10,
+        -5,    5,   0,   0,   0,   0,   5,  -5,
+        -20, -15, -15, -20, -20, -15, -15, -20,
+        -30, -20, -20, -40, -40, -20, -20, -30,
+         0,    0,   0,   0,   0,   0,   0,   0
+    };               //
+        int[] ENDknightTable = {
+        -50, -40, -30, -30, -30, -30, -40, -50,
+        -41, -20,   0,   5,   5,   0, -20, -41,
+        -30,   0,  20,  25,  25,  20,   0, -30,
+        -30,   5,  25,  35,  35,  25,   5, -30,
+        -30,   0,  25,  35,  35,  25,   0, -30,
+        -30,   5,  20,  25,  25,  20,   5, -30,
+        -51, -20,   0,   5,   5,   0, -20, -51,
+        -50, -50, -30, -30, -30, -30, -50, -50
+    };             //
+        int[] ENDbishopTable = {
+        -40, -10, -10, -10, -10, -10, -10, -40,
+        -20,   0,   0,   0,   0,   0,   0, -20,
+        -15,   0,  10,  15,  15,  10,   0, -15,
+        -10,   5,  15,  20,  20,  15,   5, -10,
+        -10,   0,  15,  20,  20,  15,   0, -10,
+        -15,   5,  10,  15,  15,  10,   5, -15,
+        -20,   0,   0,   0,   0,   0,   0, -20,
+        -40, -10, -10, -10, -10, -10, -10, -40
+    };             //
+        int[] ENDrookTable = {
+          0,   0,   0,   0,   0,   0,   0,   0,
+         10,  20,  20,  20,  20,  20,  20,  10,
+        -10,   0,   0,   0,   0,   0,   0,  -5,
+        -10,   0,   0,   0,   0,   0,   0,  -5,
+        -10,   0,   0,   0,   0,   0,   0,  -5,
+        -10,   0,   0,   0,   0,   0,   0,  -5,
+         -5,   0,   0,   0,   0,   0,   0,  -5,
+          0,   0,   0,  10,  10,   0,   0,   0
+    };               //
+        int[] ENDqueenTable = {
+        -20, -10, -10,  -5,  -5, -10, -10, -20,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -10,   0,  10,  10,  10,  10,   0, -10,
+         -5,   0,  10,  15,  15,  10,   0,  -5,
+          0,   0,  10,  15,  15,  10,   0,  -5,
+        -10,   5,  10,  10,  10,  10,   0, -10,
+        -10,   0,   5,   0,   0,   0,   0, -10,
+        -20, -10, -10,  -5,  -5, -10, -10, -20
+    };              //
+        int[] ENDkingTable = {
+        -50, -30, -10,  -1,  -1, -10, -30, -50,
+        -30, -10,   0,   0,   0,   0, -10, -30,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+         -1,   0,   0,   0,   0,   0,   0,  -1,
+         -1,   0,   0,   0,   0,   0,   0,  -1,
+        -10,   0,   0,   0,   0,   0,   0, -10,
+        -30, -10,   0,   0,   0,   0, -10, -30,
+        -50, -30, -10,  -1,  -1, -10,  30, -50
+    };               //
+        //-------------------------------------//
+
+        int _blackMajorPieces = 0;
+        int _whiteMajorPieces = 0;
+        int _materialVal = CalculateMaterial(_board, ref _whiteMajorPieces, ref _blackMajorPieces);
+
+        int _positionalVal = 0;  // Positional value will be stored here
+
+        if (Math.Max(_whiteMajorPieces, _blackMajorPieces) > 1700)  // Calculate position values for start and middle game
+        {
+            for (byte i = 0; i < 64; i++)
+            {
+                byte _piece = _board[i];
+                if (_piece == 0) continue;
+                switch (_piece)
+                {
+                    case 1: // White Pawn
+                        _positionalVal += STARTpawnTable[i];
+                        break;
+
+                    case 2: // White kNight
+                        _positionalVal += STARTknightTable[i];
+                        break;
+
+                    case 3: // White Bishop
+                        _positionalVal += STARTbishopTable[i];
+                        break;
+
+                    case 4: // White Rook
+                        _positionalVal += STARTrookTable[i];
+                        break;
+
+                    case 5: // White Queen
+                        _positionalVal += STARTqueenTable[i];
+                        break;
+
+                    case 6: // White King
+                        _positionalVal += STARTkingTable[i];
+                        wkPos = i;
+                        break;
+
+
+
+                    case 9: // Black Pawn
+                        _positionalVal -= STARTpawnTable[63 - i];
+                        break;
+
+                    case 10: // Black kNight
+                        _positionalVal -= STARTknightTable[63 - i];
+                        break;
+
+                    case 11: // BlackBishop
+                        _positionalVal -= STARTbishopTable[63 - i];
+                        break;
+
+                    case 12: // Black Rook
+                        _positionalVal -= STARTrookTable[63 - i];
+                        break;
+
+                    case 13: // Black Queen
+                        _positionalVal -= STARTqueenTable[63 - i];
+                        break;
+
+                    case 14: // Black King
+                        _positionalVal -= STARTkingTable[63 - i];
+                        bkPos = i;
+                        break;
+                }
+                _positionalVal *= piecePositionPriority;
+            }    // Count the positional value for each piece on the board
+        }
+        else  // Calculate position value for the end game (with different piece table scores)
+        {
+            for (byte i = 0; i < 64; i++)
+            {
+                byte _piece = _board[i];
+                if (_piece == 0) continue;
+                switch (_piece)
+                {
+                    case 1: // White Pawn
+                        _positionalVal += ENDpawnTable[i];
+                        break;
+
+                    case 2: // White kNight
+                        _positionalVal += ENDknightTable[i];
+                        break;
+
+                    case 3: // White Bishop
+                        _positionalVal += ENDbishopTable[i];
+                        break;
+
+                    case 4: // White Rook
+                        _positionalVal += ENDrookTable[i];
+                        break;
+
+                    case 5: // White Queen
+                        _positionalVal += ENDqueenTable[i];
+                        break;
+
+                    case 6: // White King
+                        _positionalVal += ENDkingTable[i];
+                        wkPos = i;
+                        break;
+
+
+
+                    case 9: // Black Pawn
+                        _positionalVal -= ENDpawnTable[63 - i];
+                        break;
+
+                    case 10: // Black kNight
+                        _positionalVal -= ENDknightTable[63 - i];
+                        break;
+
+                    case 11: // BlackBishop
+                        _positionalVal -= ENDbishopTable[63 - i];
+                        break;
+
+                    case 12: // Black Rook
+                        _positionalVal -= ENDrookTable[63 - i];
+                        break;
+
+                    case 13: // Black Queen
+                        _positionalVal -= ENDqueenTable[63 - i];
+                        break;
+
+                    case 14: // Black King
+                        _positionalVal -= ENDkingTable[63 - i];
+                        bkPos = i;
+                        break;
+                }
+                _positionalVal *= piecePositionPriority;
+            }    // Count the positional value for each piece on the board
+        }
+
+
+            int _evaluation = _materialVal + _positionalVal;  // Add material and positional value
+
+
+        if (_isWhite)
+        {
+            if (IsKingInCheck(_board, 64, false)) _evaluation += enemyInCheckPriority;  // Enemy is in check bonus
+            else if (IsKingInCheck(_board, 64, true)) _evaluation -= enemyInCheckPriority;  // Bonus for the enemy
+        }    // Checking for is the enemy in check, if so add bonus
+
+        // Add capture bonus (plans for later)
+        //evaluation += CalculateCaptureBonus(_board, _isWhite);
+
+        // King safety bonus (simplified)
+        _evaluation += CalculateKingSafety(_board);
+
+        // Bonus for capitalising on open files
+        _evaluation += CalculateOpenFiles(_board, _isWhite);
+
+        // Bonus for center control (simplified)
+        _evaluation += CalculateCenterControl(_board);
+
+        // Bonus for the pawn structure (simplified)
+        _evaluation += CalculatePawnStructure(_board);
+
+        return _evaluation;
+    }
+    private static int  CalculateOpenFiles(byte[] _board, bool _isWhite)
+    {
+        int _totalBonus = 0;
+        for (int x = 0; x < 8; x++)
+        {
+            bool _hasPawn = false;   // Later will be used to assigned punishment
+
+            // Check for pawns in the file, to determine if its open or not
+            for (int y = 0; y < 8; y++)
+            {
+                byte _piece = _board[y * 8 + x];
+
+                if ((_isWhite && _piece == 1) || (!_isWhite && _piece == 9))  // Found a pawn of our color, so the file isnt open
+                {
+                    _hasPawn = true;
+                    break;
+                }
+            }
+
+            // If the file doent contain pawns, its an open file
+            if (!_hasPawn)
+            {
+                // Find the rooks and queens in the open file
+                for (int y = 0; y < 8; y++)
+                {
+                    byte _piece = _board[y * 8 + x];
+
+                    switch(_piece)
+                    {
+                        case 4:
+                            _totalBonus += _isWhite ? rookOpenFileBonus : -rookOpenFileBonus;
+                            _hasPawn = true; // Reusing an old variable to stop the punishment
+                            break;
+                        case 5:
+                            _totalBonus += _isWhite ? queenOpenFileBonus : -queenOpenFileBonus;
+                            _hasPawn = true; // Reusing an old variable to stop the punishment
+                            break;
+
+                        case 12:
+                            _totalBonus += _isWhite ? -rookOpenFileBonus : rookOpenFileBonus;
+                            _hasPawn = true; // Reusing an old variable to stop the punishment
+                            break;
+                        case 13:
+                            _totalBonus += _isWhite ? -queenOpenFileBonus : queenOpenFileBonus;
+                            _hasPawn = true; // Reusing an old variable to stop the punishment
+                            break;
+                    }
+                }
+                if (!_hasPawn) _totalBonus += _isWhite ? openFileNotUsedPunishment : -openFileNotUsedPunishment;
+                // Assign a punishment if an open file is not used
+            }
+        }
+
+        return _totalBonus;
+    }
+    private static int  CalculateMaterial(byte[] _board, ref int _whiteLargePiecesVal, ref int _blackLargePiecesVal)
     {
         int _materialEval = 0;
 
@@ -510,23 +861,57 @@ class Program
             byte _piece = _board[i];
             switch (_piece)
             {
-                case 1: _materialEval += pVal; break;
-                case 2: _materialEval += nVal; break;
-                case 3: _materialEval += bVal; break;
-                case 4: _materialEval += rVal; break;
-                case 5: _materialEval += qVal; break;
+                case 1: 
+                    _materialEval += pVal; 
+                    break;
+                case 2: 
+                    _materialEval += nVal;
+                    _whiteLargePiecesVal += nVal;
+                    break;
+                case 3: 
+                    _materialEval += bVal;
+                    _whiteLargePiecesVal += bVal;
+                    break;
+                case 4: 
+                    _materialEval += rVal;
+                    _whiteLargePiecesVal += rVal;
+                    break;
+                case 5: 
+                    _materialEval += qVal;
+                    _whiteLargePiecesVal += qVal;
+                    break;
+                case 6: 
+                    _materialEval += kVal; 
+                    break;
 
-                case 9: _materialEval -= pVal; break;
-                case 10: _materialEval -= nVal; break;
-                case 11: _materialEval -= bVal; break;
-                case 12: _materialEval -= rVal; break;
-                case 13: _materialEval -= qVal; break;
+                case 9:  
+                    _materialEval -= pVal; 
+                    break;
+                case 10: 
+                    _materialEval -= nVal;
+                    _blackLargePiecesVal -= nVal;
+                    break;
+                case 11: 
+                    _materialEval -= bVal;
+                    _blackLargePiecesVal -= bVal;
+                    break;
+                case 12: 
+                    _materialEval -= rVal;
+                    _blackLargePiecesVal -= rVal;
+                    break;
+                case 13: 
+                    _materialEval -= qVal;
+                    _blackLargePiecesVal -= qVal;
+                    break;
+                case 14: 
+                    _materialEval -= kVal; 
+                    break;
             }
         }
 
         return _materialEval; // Return the material score
     }
-    private static int  CalculateCentralControl(byte[] _board)
+    private static int  CalculateCenterControl(byte[] _board)
     {
         int _controlScore = 0;
         byte _piece = _board[27];
@@ -909,8 +1294,8 @@ class Program
             return maximizingPlayer ? int.MinValue + depth : int.MaxValue - depth;
         }*/  // The code doesnt work so i removed it to not waste time, however I will fix it later
 
-        if (depth == 0) // return eval result after the search ended
-            return Evaluate(_board, false);
+        if (depth == 0)  // return eval result after the search ended
+            return AdvEvaluate(_board, false);
 
         List<Move> moves = GenerateAllMoves(_board, maximizingPlayer);
         if (maximizingPlayer)
@@ -951,7 +1336,8 @@ class Program
             return minEval;
         }
     }
-    public static Move FindBestMove(byte[] board, int depth, bool isWhiteTurn)
+   
+    /*public static Move FindBestMove(byte[] board, int depth, bool isWhiteTurn)
     {
         Move bestMove = null;
         int bestValue = isWhiteTurn ? int.MinValue : int.MaxValue;
@@ -998,7 +1384,7 @@ class Program
             PrintMateSequence(newBoard, !isWhiteTurn, depth - 1);
         }
         Write("\n");
-    }
+    }*/
 
 
 
@@ -1020,7 +1406,10 @@ class Program
             if (_newPosition / 8 == _promotionRow)
             {
                 // Pawn promotion
-                _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = 0 });
+                _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wn1 : bn1), CapturedPiece = 0 });  // Promoting to a knight
+                _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wb1 : bb1), CapturedPiece = 0 });  // Promoting to a bishop
+                _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wr1 : br1), CapturedPiece = 0 });  // Prompting to a rook
+                _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = 0 });  // Promoting to a queen
             }
             else
             {
@@ -1046,7 +1435,10 @@ class Program
                     if (_attackPosition / 8 == _promotionRow)
                     {
                         // Check for promotion after attack
-                        _generatedMoves.Add(new Move { From = _position, To = (byte)_attackPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = _target });
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wn1 : bn1), CapturedPiece = 0 });  // Promoting to a knight
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wb1 : bb1), CapturedPiece = 0 });  // Promoting to a bishop
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wr1 : br1), CapturedPiece = 0 });  // Prompting to a rook
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = 0 });  // Promoting to a queen
                     }
                     else
                     {
@@ -1066,7 +1458,10 @@ class Program
                     if (_attackPosition / 8 == _promotionRow)
                     {
                         // Check for promotion after attack
-                        _generatedMoves.Add(new Move { From = _position, To = (byte)_attackPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = _target });
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wn1 : bn1), CapturedPiece = 0 });  // Promoting to a knight
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wb1 : bb1), CapturedPiece = 0 });  // Promoting to a bishop
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wr1 : br1), CapturedPiece = 0 });  // Prompting to a rook
+                        _generatedMoves.Add(new Move { From = _position, To = (byte)_newPosition, Piece = (byte)(_isWhite ? wq1 : bq1), CapturedPiece = 0 });  // Promoting to a queen
                     }
                     else
                     {
@@ -1267,6 +1662,10 @@ class Program
                         Write("White queen");
                         break;
 
+                    case wk1:
+                        Write("Opps, seems like the white king was captured");
+                        break;
+
 
 
                     case bp1:
@@ -1287,6 +1686,10 @@ class Program
 
                     case bq1:
                         Write("Black queen");
+                        break;
+
+                    case bk1:
+                        Write("Opps, seems like the black king was captured");
                         break;
                 }
                 Write(" was taken");
