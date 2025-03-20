@@ -98,12 +98,43 @@ But I am planning to grow it into a strong chess engine/bot in the future
 - Fixed a lot of small bugs
 - Removed old stuff
 
-  
-# Info :D
-### 12.3.2025 - renaimed the project from _Gymat_ to _Zephyr_, 
+### Zeta+:
+- Added a better checkmate detection
+- Added advanced info output for the evaluation function
+- Fixed bishop and queens teleportation through the left and right boarders
+- Fixed Check xrays from major pieces
+- Fixed inverse king safety calculation
+- Fixed Evaluation problems
+- Tweaked the position tables
+- Fixed crashing when you didn't input any symbols for the board in the parsing stage
+- Optimised the board parsing function
+- Fixed wrong error output in the board parsing stage
 
+  
+# Inportant milestones :D
+
+### 12.3.2025 - renaimed the project from _Gymat_ to _Zephyr_, 
 **Reason, quote:**
 
 _"Zephyr means a gentle breeze. The name reflects the lightness and elegance with which the engine solves complex problems, making it seem effortless and graceful."_
 
 
+### 18.3.2025 - First big improvement in the engine' s strength
+Happened with the release of the version Zeta
+
+Probably because of the new AdvEvaluate() function
+
+Most significant upgrade was: Position tables
+
+
+
+### 20.3.2025 - First checkmate from the engine
+First full recorded game where the engine from to start position with no advantage against the enemy (itself)
+
+made a sequence of moves that led to the checkmate of the enemy (itself in black color)
+
+**Input:**
+- Depth = 4
+- Board position: 0 
+  (Classic start position)
+- White turn: true
