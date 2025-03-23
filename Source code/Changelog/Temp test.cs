@@ -79,7 +79,7 @@ class Program
     static void Main()
     {
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta";                       // Set the app title
+        Title = "Zephyr engine Eta4";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -1279,7 +1279,7 @@ class Program
     }
     private static List<Move> IsMoveLegalNoCheckCriteria(byte[] _board, List<Move> _moves, bool _isKingWhite)
     {
-        /*for(int i = 0; i < _moves.Count; i++)
+        for(int i = 0; i < _moves.Count; i++)
         {
             if (_moves[i].Piece == 6 || _moves[i].Piece == 14)  // The king has moved
             {
@@ -1297,7 +1297,7 @@ class Program
                     i--;                 // Decrease by one so by the end of the loop (i++) we dont hop over a move
                 }
             }
-        }*/
+        }
 
         return _moves;
     }
@@ -1891,3 +1891,4 @@ class Program
         return false;
     }
 }
+    
