@@ -7,13 +7,13 @@ using System.Text;
 internal class Program
 {
 	// Token: 0x06000001 RID: 1 RVA: 0x00002050 File Offset: 0x00000250
-	private static void Main(string[] args)
+	private static void Main()
 	{
 		Console.OutputEncoding = Encoding.Unicode;
 		Console.Title = "Zephyr engine Eta";
-		string a = "";
-		Program.Move move = null;
-		while (a != "exit")
+		string continueGame = "";
+		Program.Move makeBestMove = null;
+		while (continueGame != "exit")
 		{
 			Program.gCheckMate = 0;
 			int depth = Program.GetDepth();
@@ -22,22 +22,22 @@ internal class Program
 			Program.whiteTurn = Program.GetTurn();
 			Console.Clear();
 			Program.DisplayBoard(Program.mainBoard, boardDisplayType, 64, 64);
-			int num = Program.AdvEvaluate(Program.mainBoard, true, true);
-			Console.Write(string.Format("\n\t\t\t\tCurrent eval: {0}\n\n\n\t", num));
+			int eval = Program.AdvEvaluate(Program.mainBoard, true, true);
+			Console.Write(string.Format("\n\t\t\t\tCurrent eval: {0}\n\n\n\t", eval));
 			Console.Write("White king in check: " + Program.IsKingInCheck(Program.mainBoard, Program.wkPos, true).ToString() + ", wkPos: " + Program.wkPos.ToString());
 			Console.Write("\n\tBlack king in check: " + Program.IsKingInCheck(Program.mainBoard, Program.bkPos, false).ToString() + ", bkPos: " + Program.bkPos.ToString());
 			Console.Write("\n\n\tContinue?  (press ENTER): ");
-			a = Console.ReadLine();
-			int minValue = int.MinValue;
-			int maxValue = int.MaxValue;
-			while (a == "")
+			continueGame = Console.ReadLine();
+			int alpha = int.MinValue;
+			int beta = int.MaxValue;
+			while (continueGame == "")
 			{
-				Stopwatch stopwatch = Stopwatch.StartNew();
+				Stopwatch timeCounter = Stopwatch.StartNew();
 				bool flag = Program.gCheckMate < 3;
 				if (flag)
 				{
-					Program.AlphaBetaSearch(Program.mainBoard, depth, minValue, maxValue, Program.whiteTurn, out move);
-					Program.ApplyMove(Program.mainBoard, move);
+					Program.AlphaBetaSearch(Program.mainBoard, depth, alpha, beta, Program.whiteTurn, out makeBestMove);
+					Program.ApplyMove(Program.mainBoard, makeBestMove);
 					Program.whiteTurn = !Program.whiteTurn;
 					Console.Clear();
 				}
@@ -46,33 +46,33 @@ internal class Program
 					Console.Clear();
 					Console.Write("\t\tCHECKMATE  :D");
 				}
-				stopwatch.Stop();
-				bool flag2 = move != null;
+				timeCounter.Stop();
+				bool flag2 = makeBestMove != null;
 				if (flag2)
 				{
-					Program.DisplayBoard(Program.mainBoard, boardDisplayType, move.From, move.To);
+					Program.DisplayBoard(Program.mainBoard, boardDisplayType, makeBestMove.From, makeBestMove.To);
 				}
 				else
 				{
 					Program.DisplayBoard(Program.mainBoard, boardDisplayType, 64, 64);
 				}
-				num = Program.AdvEvaluate(Program.mainBoard, true, true);
-				Console.Write(string.Format("\n\t\t\t\tCurrent eval: {0}\n\n\n\t", num));
+				eval = Program.AdvEvaluate(Program.mainBoard, true, true);
+				Console.Write(string.Format("\n\t\t\t\tCurrent eval: {0}\n\n\n\t", eval));
 				Console.Write(string.Concat(new string[]
 				{
 					"\n\tAlpha-beta skipped: ",
 					Program.gSkippedPositions.ToString(),
 					", time elapsed: ",
-					stopwatch.ElapsedMilliseconds.ToString(),
+					timeCounter.ElapsedMilliseconds.ToString(),
 					" ms\n\t"
 				}));
 				Console.Write("White king in check: " + Program.IsKingInCheck(Program.mainBoard, Program.wkPos, true).ToString() + ", wkPos: " + Program.wkPos.ToString());
 				Console.Write("\n\tBlack king in check: " + Program.IsKingInCheck(Program.mainBoard, Program.bkPos, false).ToString() + ", bkPos: " + Program.bkPos.ToString());
 				Console.Write("\n\n\tContinue?  (press ENTER): ");
-				a = Console.ReadLine().Trim().ToLower();
+				continueGame = Console.ReadLine().Trim().ToLower();
 			}
 			Program.EncodeBoard(Program.mainBoard);
-			bool flag3 = a != "exit";
+			bool flag3 = continueGame != "exit";
 			if (flag3)
 			{
 				Console.ForegroundColor = ConsoleColor.Green;
@@ -86,61 +86,61 @@ internal class Program
 	// Token: 0x06000002 RID: 2 RVA: 0x00002378 File Offset: 0x00000578
 	private static bool GetEncodedBoard(bool _type)
 	{
-		bool flag = false;
-		bool flag2 = false;
-		while (!flag)
+		bool _validEncoding = false;
+		bool _reset = false;
+		while (!_validEncoding)
 		{
-			string text = "";
+			string _encodedBoard = "";
 			Console.Write("\n\tEnter the board (64 characters): (SP: 0 / rnbqkbnrpppppppp32PPPPPPPPRNBQKBNR)\n\t");
-			while (text.Length < 64 && !flag && !flag2)
+			while (_encodedBoard.Length < 64 && !_validEncoding && !_reset)
 			{
-				string text2 = Console.ReadLine().Replace(" ", "");
-				text += text2;
-				bool flag3 = text2 == "0";
-				if (flag3)
+				string _userInput = Console.ReadLine().Replace(" ", "");
+				_encodedBoard += _userInput;
+				bool flag = _userInput == "0";
+				if (flag)
 				{
-					text = "rnbqkbnrpppppppp32PPPPPPPPRNBQKBNR";
+					_encodedBoard = "rnbqkbnrpppppppp32PPPPPPPPRNBQKBNR";
 				}
-				bool flag4 = text.Length <= 64 && text.Length > 0;
-				if (flag4)
+				bool flag2 = _encodedBoard.Length <= 64 && _encodedBoard.Length > 0;
+				if (flag2)
 				{
-					bool flag5 = Program.TryParseClassicBoard(ref text);
-					if (flag5)
+					bool flag3 = Program.TryParseClassicBoard(ref _encodedBoard);
+					if (flag3)
 					{
-						flag = true;
+						_validEncoding = true;
 					}
 					else
 					{
-						bool flag6 = text[text.Length - 1] == '#';
-						if (flag6)
+						bool flag4 = _encodedBoard[_encodedBoard.Length - 1] == '#';
+						if (flag4)
 						{
 							Console.Clear();
 							Console.Write("\t[!]  - Error while parsing board: to many characters\n");
-							flag2 = true;
+							_reset = true;
 						}
 						else
 						{
-							bool flag7 = text[text.Length - 1] == '!';
-							if (flag7)
+							bool flag5 = _encodedBoard[_encodedBoard.Length - 1] == '!';
+							if (flag5)
 							{
 								Console.Clear();
 								Console.Write("\t[!]  - Error while parsing board: unknown character\n");
-								flag2 = true;
+								_reset = true;
 							}
 						}
 					}
 				}
 				Console.Write("\t");
 			}
-			bool flag8 = text.Length == 64;
-			if (flag8)
+			bool flag6 = _encodedBoard.Length == 64;
+			if (flag6)
 			{
 				if (!_type)
 				{
-					bool flag9 = Program.TryParseClassicBoard(ref text);
-					if (flag9)
+					bool flag7 = Program.TryParseClassicBoard(ref _encodedBoard);
+					if (flag7)
 					{
-						flag = true;
+						_validEncoding = true;
 					}
 					else
 					{
@@ -150,17 +150,17 @@ internal class Program
 				}
 			}
 		}
-		return flag;
+		return _validEncoding;
 	}
 
 	// Token: 0x06000003 RID: 3 RVA: 0x000024E8 File Offset: 0x000006E8
 	private static bool TryParseOptimisedBoard(string _encoded, byte[] _board)
 	{
-		byte b = 0;
-		while (b < 32)
+		byte i = 0;
+		while (i < 32)
 		{
-			byte b2 = Program.ConvertBoardToBytes(_encoded[(int)b], true);
-			bool flag = b2 == 8;
+			byte _tempBuffer = Program.ConvertBoardToBytes(_encoded[(int)i], true);
+			bool flag = _tempBuffer == 8;
 			bool result;
 			if (flag)
 			{
@@ -168,34 +168,34 @@ internal class Program
 			}
 			else
 			{
-				_board[(int)b] = b2;
-				bool flag2 = _board[(int)b] == 6;
+				_board[(int)i] = _tempBuffer;
+				bool flag2 = _board[(int)i] == 6;
 				if (flag2)
 				{
-					Program.wkPos = b;
+					Program.wkPos = i;
 				}
-				bool flag3 = _board[(int)b] == 14;
+				bool flag3 = _board[(int)i] == 14;
 				if (flag3)
 				{
-					Program.bkPos = b;
+					Program.bkPos = i;
 				}
-				b2 = Program.ConvertBoardToBytes(_encoded[(int)b], false);
-				bool flag4 = b2 == 8;
+				_tempBuffer = Program.ConvertBoardToBytes(_encoded[(int)i], false);
+				bool flag4 = _tempBuffer == 8;
 				if (!flag4)
 				{
-					byte b3 = b;
-					_board[(int)b3] = _board[(int)b3] + b2;
-					bool flag5 = _board[(int)b] == 6;
+					byte b = i;
+					_board[(int)b] = _board[(int)b] + _tempBuffer;
+					bool flag5 = _board[(int)i] == 6;
 					if (flag5)
 					{
-						Program.wkPos = b;
+						Program.wkPos = i;
 					}
-					bool flag6 = _board[(int)b] == 14;
+					bool flag6 = _board[(int)i] == 14;
 					if (flag6)
 					{
-						Program.bkPos = b;
+						Program.bkPos = i;
 					}
-					b += 1;
+					i += 1;
 					continue;
 				}
 				result = false;
@@ -208,89 +208,89 @@ internal class Program
 	// Token: 0x06000004 RID: 4 RVA: 0x000025B4 File Offset: 0x000007B4
 	private static bool TryParseClassicBoard(ref string _encoded)
 	{
-		byte b = 0;
-		byte b2 = 0;
-		while ((int)b2 < _encoded.Length)
+		byte _fenOffset = 0;
+		byte i = 0;
+		while ((int)i < _encoded.Length)
 		{
-			bool flag = b2 + b < 64;
+			bool flag = i + _fenOffset < 64;
 			if (flag)
 			{
-				Program.mainBoard[(int)(b2 + b)] = Program.ConvertBoardToBytes(_encoded[(int)b2], true);
-				bool flag2 = Program.mainBoard[(int)(b2 + b)] == 8;
+				Program.mainBoard[(int)(i + _fenOffset)] = Program.ConvertBoardToBytes(_encoded[(int)i], true);
+				bool flag2 = Program.mainBoard[(int)(i + _fenOffset)] == 8;
 				if (flag2)
 				{
-					string text = "";
-					bool flag3 = (int)b2 < _encoded.Length - 1;
+					string _temp = "";
+					bool flag3 = (int)i < _encoded.Length - 1;
 					if (flag3)
 					{
-						text += _encoded[(int)b2].ToString();
-						text += _encoded[(int)(b2 + 1)].ToString();
+						_temp += _encoded[(int)i].ToString();
+						_temp += _encoded[(int)(i + 1)].ToString();
 					}
-					byte b3;
-					bool flag4 = byte.TryParse(text, out b3);
+					byte _freeSpaceForFen;
+					bool flag4 = byte.TryParse(_temp, out _freeSpaceForFen);
 					if (flag4)
 					{
-						for (byte b4 = b2; b4 < b3 + b2; b4 += 1)
+						for (byte j = i; j < _freeSpaceForFen + i; j += 1)
 						{
-							bool flag5 = b2 + b < 64;
+							bool flag5 = i + _fenOffset < 64;
 							if (flag5)
 							{
-								Program.mainBoard[(int)(b2 + b)] = 0;
-								b += 1;
+								Program.mainBoard[(int)(i + _fenOffset)] = 0;
+								_fenOffset += 1;
 							}
 							else
 							{
-								b4 += b3;
+								j += _freeSpaceForFen;
 								_encoded += "#";
 							}
 						}
-						b -= 2;
-						b2 += 1;
+						_fenOffset -= 2;
+						i += 1;
 					}
 					else
 					{
-						bool flag6 = byte.TryParse(_encoded[(int)b2].ToString(), out b3);
+						bool flag6 = byte.TryParse(_encoded[(int)i].ToString(), out _freeSpaceForFen);
 						if (!flag6)
 						{
 							_encoded += "!";
 							return false;
 						}
-						for (int i = (int)b2; i < (int)(b3 + b2); i++)
+						for (int k = (int)i; k < (int)(_freeSpaceForFen + i); k++)
 						{
-							bool flag7 = b2 + b < 64;
+							bool flag7 = i + _fenOffset < 64;
 							if (flag7)
 							{
-								Program.mainBoard[(int)(b2 + b)] = 0;
-								b += 1;
+								Program.mainBoard[(int)(i + _fenOffset)] = 0;
+								_fenOffset += 1;
 							}
 							else
 							{
-								i += (int)b3;
+								k += (int)_freeSpaceForFen;
 								_encoded += "#";
 							}
 						}
-						b -= 1;
+						_fenOffset -= 1;
 					}
 				}
-				bool flag8 = Program.mainBoard[(int)(b2 + b)] == 6;
+				bool flag8 = Program.mainBoard[(int)(i + _fenOffset)] == 6;
 				if (flag8)
 				{
-					Program.wkPos = b2 + b;
+					Program.wkPos = i + _fenOffset;
 				}
-				bool flag9 = Program.mainBoard[(int)(b2 + b)] == 14;
+				bool flag9 = Program.mainBoard[(int)(i + _fenOffset)] == 14;
 				if (flag9)
 				{
-					Program.bkPos = b2 + b;
+					Program.bkPos = i + _fenOffset;
 				}
 			}
 			else
 			{
-				b2 += 128;
+				i += 128;
 				_encoded += "#";
 			}
-			b2 += 1;
+			i += 1;
 		}
-		bool flag10 = _encoded.Length + (int)b != 64;
+		bool flag10 = _encoded.Length + (int)_fenOffset != 64;
 		return !flag10;
 	}
 
@@ -593,7 +593,7 @@ internal class Program
 		{
 			Console.Write("\n\n\n");
 		}
-		Console.Write("\t\t\t\tParsed board (in bytes): " + _board.Length.ToString() + "\n\n\n\t\t\t\t  ");
+		Console.Write("\t\t\t\tParsed board (in bytes): " + _board.Length.ToString() + "\n\n\n\t\t\t  ");
 		bool flag3 = _board.Length == 64;
 		if (flag3)
 		{
@@ -674,6 +674,7 @@ internal class Program
 			}
 			else
 			{
+				Console.Write("\t  ");
 				for (int j = 0; j < 64; j++)
 				{
 					bool flag14 = _board[j] == 0;
@@ -801,55 +802,55 @@ internal class Program
 		}
 	}
 
-	// Token: 0x06000008 RID: 8 RVA: 0x00003030 File Offset: 0x00001230
+	// Token: 0x06000008 RID: 8 RVA: 0x0000303C File Offset: 0x0000123C
 	private static void EncodeBoard(byte[] _board)
 	{
-		string text = "";
-		string text2 = "";
-		byte b = 0;
+		string _fullEncoded = "";
+		string _fen = "";
+		byte _emptySquares = 0;
 		bool flag = _board.Length == 64;
 		if (flag)
 		{
-			for (byte b2 = 0; b2 < 64; b2 += 1)
+			for (byte i = 0; i < 64; i += 1)
 			{
-				text += Program.ConvertBoardToChars(_board[(int)b2], true).ToString();
-				bool flag2 = text[(int)b2] != '+';
+				_fullEncoded += Program.ConvertBoardToChars(_board[(int)i], true).ToString();
+				bool flag2 = _fullEncoded[(int)i] != '+';
 				if (flag2)
 				{
-					bool flag3 = b > 0;
+					bool flag3 = _emptySquares > 0;
 					if (flag3)
 					{
-						text2 += b.ToString();
-						b = 0;
+						_fen += _emptySquares.ToString();
+						_emptySquares = 0;
 					}
-					text2 += text[(int)b2].ToString();
+					_fen += _fullEncoded[(int)i].ToString();
 				}
 				else
 				{
-					b += 1;
+					_emptySquares += 1;
 				}
 			}
-			bool flag4 = b > 0;
+			bool flag4 = _emptySquares > 0;
 			if (flag4)
 			{
-				text2 += b.ToString();
+				_fen += _emptySquares.ToString();
 			}
 		}
-		text = text.Replace("++++++++", "+++++++/");
-		Program.PrintEncodedBoard(text, text2);
+		_fullEncoded = _fullEncoded.Replace("++++++++", "+++++++/");
+		Program.PrintEncodedBoard(_fullEncoded, _fen);
 	}
 
-	// Token: 0x06000009 RID: 9 RVA: 0x0000311E File Offset: 0x0000131E
+	// Token: 0x06000009 RID: 9 RVA: 0x0000312A File Offset: 0x0000132A
 	private static void PrintEncodedBoard(string _encodedBoard, string _boardFen)
 	{
 		Console.Write("\n\tEncoded board code: " + _encodedBoard);
 		Console.Write("\n\tCustom fen board code: " + _boardFen + "\n\n\n");
 	}
 
-	// Token: 0x0600000A RID: 10 RVA: 0x00003148 File Offset: 0x00001348
+	// Token: 0x0600000A RID: 10 RVA: 0x00003154 File Offset: 0x00001354
 	private static int AdvEvaluate(byte[] _board, bool _isWhite, bool _writeInfo = false)
 	{
-		int[] array = new int[]
+		int[] STARTpawnTable = new int[]
 		{
 			0,
 			0,
@@ -916,7 +917,7 @@ internal class Program
 			0,
 			0
 		};
-		int[] array2 = new int[]
+		int[] STARTknightTable = new int[]
 		{
 			-50,
 			-40,
@@ -983,7 +984,7 @@ internal class Program
 			-50,
 			-50
 		};
-		int[] array3 = new int[]
+		int[] STARTbishopTable = new int[]
 		{
 			-25,
 			-10,
@@ -1050,7 +1051,7 @@ internal class Program
 			-10,
 			-25
 		};
-		int[] array4 = new int[]
+		int[] STARTrookTable = new int[]
 		{
 			0,
 			0,
@@ -1117,7 +1118,7 @@ internal class Program
 			0,
 			0
 		};
-		int[] array5 = new int[]
+		int[] STARTqueenTable = new int[]
 		{
 			-20,
 			-10,
@@ -1184,7 +1185,7 @@ internal class Program
 			-10,
 			-20
 		};
-		int[] array6 = new int[]
+		int[] STARTkingTable = new int[]
 		{
 			-30,
 			-40,
@@ -1251,7 +1252,7 @@ internal class Program
 			30,
 			20
 		};
-		int[] array7 = new int[]
+		int[] ENDpawnTable = new int[]
 		{
 			0,
 			0,
@@ -1318,7 +1319,7 @@ internal class Program
 			0,
 			0
 		};
-		int[] array8 = new int[]
+		int[] ENDknightTable = new int[]
 		{
 			-50,
 			-40,
@@ -1385,7 +1386,7 @@ internal class Program
 			-50,
 			-50
 		};
-		int[] array9 = new int[]
+		int[] ENDbishopTable = new int[]
 		{
 			-40,
 			-10,
@@ -1452,7 +1453,7 @@ internal class Program
 			-10,
 			-40
 		};
-		int[] array10 = new int[]
+		int[] ENDrookTable = new int[]
 		{
 			0,
 			0,
@@ -1519,7 +1520,7 @@ internal class Program
 			0,
 			0
 		};
-		int[] array11 = new int[]
+		int[] ENDqueenTable = new int[]
 		{
 			-20,
 			-10,
@@ -1586,7 +1587,7 @@ internal class Program
 			-10,
 			-20
 		};
-		int[] array12 = new int[]
+		int[] ENDkingTable = new int[]
 		{
 			-50,
 			-30,
@@ -1653,115 +1654,115 @@ internal class Program
 			-30,
 			-50
 		};
-		int val = 0;
-		int val2 = 0;
-		int num = Program.CalculateMaterial(_board, ref val2, ref val);
-		int num2 = 0;
-		int num3 = 0;
-		bool flag = Math.Max(val2, val) > 1700;
+		int _blackMajorPieces = 0;
+		int _whiteMajorPieces = 0;
+		int _materialVal = Program.CalculateMaterial(_board, ref _whiteMajorPieces, ref _blackMajorPieces);
+		int _positionalVal = 0;
+		int _enemyInCheckVal = 0;
+		bool flag = Math.Max(_whiteMajorPieces, _blackMajorPieces) > 1700;
 		if (flag)
 		{
-			for (byte b = 0; b < 64; b += 1)
+			for (byte i = 0; i < 64; i += 1)
 			{
-				byte b2 = _board[(int)b];
-				bool flag2 = b2 == 0;
+				byte _piece = _board[(int)i];
+				bool flag2 = _piece == 0;
 				if (!flag2)
 				{
-					switch (b2)
+					switch (_piece)
 					{
 					case 1:
-						num2 += array[(int)b];
+						_positionalVal += STARTpawnTable[(int)i];
 						break;
 					case 2:
-						num2 += array2[(int)b];
+						_positionalVal += STARTknightTable[(int)i];
 						break;
 					case 3:
-						num2 += array3[(int)b];
+						_positionalVal += STARTbishopTable[(int)i];
 						break;
 					case 4:
-						num2 += array4[(int)b];
+						_positionalVal += STARTrookTable[(int)i];
 						break;
 					case 5:
-						num2 += array5[(int)b];
+						_positionalVal += STARTqueenTable[(int)i];
 						break;
 					case 6:
-						num2 += array6[(int)b];
-						Program.wkPos = b;
+						_positionalVal += STARTkingTable[(int)i];
+						Program.wkPos = i;
 						break;
 					case 9:
-						num2 -= array[(int)(63 - b)];
+						_positionalVal -= STARTpawnTable[(int)(63 - i)];
 						break;
 					case 10:
-						num2 -= array2[(int)(63 - b)];
+						_positionalVal -= STARTknightTable[(int)(63 - i)];
 						break;
 					case 11:
-						num2 -= array3[(int)(63 - b)];
+						_positionalVal -= STARTbishopTable[(int)(63 - i)];
 						break;
 					case 12:
-						num2 -= array4[(int)(63 - b)];
+						_positionalVal -= STARTrookTable[(int)(63 - i)];
 						break;
 					case 13:
-						num2 -= array5[(int)(63 - b)];
+						_positionalVal -= STARTqueenTable[(int)(63 - i)];
 						break;
 					case 14:
-						num2 -= array6[(int)(63 - b)];
-						Program.bkPos = b;
+						_positionalVal -= STARTkingTable[(int)(63 - i)];
+						Program.bkPos = i;
 						break;
 					}
-					num2 = num2;
+					_positionalVal = _positionalVal;
 				}
 			}
 		}
 		else
 		{
-			for (byte b3 = 0; b3 < 64; b3 += 1)
+			for (byte j = 0; j < 64; j += 1)
 			{
-				byte b4 = _board[(int)b3];
-				bool flag3 = b4 == 0;
+				byte _piece2 = _board[(int)j];
+				bool flag3 = _piece2 == 0;
 				if (!flag3)
 				{
-					switch (b4)
+					switch (_piece2)
 					{
 					case 1:
-						num2 += array7[(int)b3];
+						_positionalVal += ENDpawnTable[(int)j];
 						break;
 					case 2:
-						num2 += array8[(int)b3];
+						_positionalVal += ENDknightTable[(int)j];
 						break;
 					case 3:
-						num2 += array9[(int)b3];
+						_positionalVal += ENDbishopTable[(int)j];
 						break;
 					case 4:
-						num2 += array10[(int)b3];
+						_positionalVal += ENDrookTable[(int)j];
 						break;
 					case 5:
-						num2 += array11[(int)b3];
+						_positionalVal += ENDqueenTable[(int)j];
 						break;
 					case 6:
-						num2 += array12[(int)b3];
-						Program.wkPos = b3;
+						_positionalVal += ENDkingTable[(int)j];
+						Program.wkPos = j;
 						break;
 					case 9:
-						num2 -= array7[(int)(63 - b3)];
+						_positionalVal -= ENDpawnTable[(int)(63 - j)];
 						break;
 					case 10:
-						num2 -= array8[(int)(63 - b3)];
+						_positionalVal -= ENDknightTable[(int)(63 - j)];
 						break;
 					case 11:
-						num2 -= array9[(int)(63 - b3)];
+						_positionalVal -= ENDbishopTable[(int)(63 - j)];
 						break;
 					case 12:
-						num2 -= array10[(int)(63 - b3)];
+						_positionalVal -= ENDrookTable[(int)(63 - j)];
 						break;
 					case 13:
-						num2 -= array11[(int)(63 - b3)];
+						_positionalVal -= ENDqueenTable[(int)(63 - j)];
 						break;
 					case 14:
-						num2 -= array12[(int)(63 - b3)];
-						Program.bkPos = b3;
+						_positionalVal -= ENDkingTable[(int)(63 - j)];
+						Program.bkPos = j;
 						break;
 					}
-					num2 = num2;
+					_positionalVal = _positionalVal;
 				}
 			}
 		}
@@ -1770,200 +1771,200 @@ internal class Program
 			bool flag4 = Program.IsKingInCheck(_board, 64, false);
 			if (flag4)
 			{
-				num3 += 150;
+				_enemyInCheckVal += 150;
 			}
 			else
 			{
 				bool flag5 = Program.IsKingInCheck(_board, 64, true);
 				if (flag5)
 				{
-					num3 -= 150;
+					_enemyInCheckVal -= 150;
 				}
 			}
 		}
-		int num4 = Program.CalculateKingSafety(_board);
-		int num5 = Program.CalculateOpenFiles(_board, _isWhite);
-		int num6 = Program.CalculateCenterControl(_board);
-		int num7 = Program.CalculatePawnStructure(_board);
-		int result = num + num2 + num5 + num6 + num7 + num3;
+		int _kingSafetyVal = Program.CalculateKingSafety(_board);
+		int _openFileVal = Program.CalculateOpenFiles(_board, _isWhite);
+		int _centerControlVal = Program.CalculateCenterControl(_board);
+		int _pawnStructureVal = Program.CalculatePawnStructure(_board);
+		int _evaluation = _materialVal + _positionalVal + _openFileVal + _centerControlVal + _pawnStructureVal + _enemyInCheckVal;
 		if (_writeInfo)
 		{
 			Console.Write(string.Concat(new string[]
 			{
 				"Material: ",
-				num.ToString(),
+				_materialVal.ToString(),
 				" + positional: ",
-				num2.ToString(),
+				_positionalVal.ToString(),
 				" + open file: ",
-				num5.ToString()
+				_openFileVal.ToString()
 			}));
 			Console.Write(string.Concat(new string[]
 			{
 				"\n\t\t\t+ king safety: ",
-				num4.ToString(),
+				_kingSafetyVal.ToString(),
 				" + enemy in check: ",
-				num3.ToString(),
+				_enemyInCheckVal.ToString(),
 				" +\n\t\t\t"
 			}));
-			Console.Write("center control: " + num6.ToString() + " + pawn structure: " + num7.ToString());
+			Console.Write("center control: " + _centerControlVal.ToString() + " + pawn structure: " + _pawnStructureVal.ToString());
 		}
-		return result;
+		return _evaluation;
 	}
 
-	// Token: 0x0600000B RID: 11 RVA: 0x00003628 File Offset: 0x00001828
+	// Token: 0x0600000B RID: 11 RVA: 0x00003634 File Offset: 0x00001834
 	private static int CalculateOpenFiles(byte[] _board, bool _isWhite)
 	{
-		int num = 0;
-		for (int i = 0; i < 8; i++)
+		int _totalBonus = 0;
+		for (int x = 0; x < 8; x++)
 		{
-			bool flag = false;
-			for (int j = 0; j < 8; j++)
+			bool _hasPawn = false;
+			for (int y = 0; y < 8; y++)
 			{
-				byte b = _board[j * 8 + i];
-				bool flag2 = (_isWhite && b == 1) || (!_isWhite && b == 9);
-				if (flag2)
+				byte _piece = _board[y * 8 + x];
+				bool flag = (_isWhite && _piece == 1) || (!_isWhite && _piece == 9);
+				if (flag)
 				{
-					flag = true;
+					_hasPawn = true;
 					break;
 				}
 			}
-			bool flag3 = !flag;
-			if (flag3)
+			bool flag2 = !_hasPawn;
+			if (flag2)
 			{
-				for (int k = 0; k < 8; k++)
+				for (int y2 = 0; y2 < 8; y2++)
 				{
-					byte b2 = _board[k * 8 + i];
-					byte b3 = b2;
-					byte b4 = b3;
-					if (b4 <= 5)
+					byte _piece2 = _board[y2 * 8 + x];
+					byte b = _piece2;
+					byte b2 = b;
+					if (b2 <= 5)
 					{
-						if (b4 != 4)
+						if (b2 != 4)
 						{
-							if (b4 == 5)
+							if (b2 == 5)
 							{
-								num += (_isWhite ? 25 : -25);
-								flag = true;
+								_totalBonus += (_isWhite ? 25 : -25);
+								_hasPawn = true;
 							}
 						}
 						else
 						{
-							num += (_isWhite ? 30 : -30);
-							flag = true;
+							_totalBonus += (_isWhite ? 30 : -30);
+							_hasPawn = true;
 						}
 					}
-					else if (b4 != 12)
+					else if (b2 != 12)
 					{
-						if (b4 == 13)
+						if (b2 == 13)
 						{
-							num += (_isWhite ? -25 : 25);
-							flag = true;
+							_totalBonus += (_isWhite ? -25 : 25);
+							_hasPawn = true;
 						}
 					}
 					else
 					{
-						num += (_isWhite ? -30 : 30);
-						flag = true;
+						_totalBonus += (_isWhite ? -30 : 30);
+						_hasPawn = true;
 					}
 				}
-				bool flag4 = !flag;
-				if (flag4)
+				bool flag3 = !_hasPawn;
+				if (flag3)
 				{
-					num += (_isWhite ? -5 : 5);
+					_totalBonus += (_isWhite ? -5 : 5);
 				}
 			}
 		}
-		return num;
+		return _totalBonus;
 	}
 
-	// Token: 0x0600000C RID: 12 RVA: 0x00003750 File Offset: 0x00001950
+	// Token: 0x0600000C RID: 12 RVA: 0x0000375C File Offset: 0x0000195C
 	private static int CalculateMaterial(byte[] _board, ref int _whiteLargePiecesVal, ref int _blackLargePiecesVal)
 	{
-		int num = 0;
+		int _materialEval = 0;
 		for (int i = 0; i < 64; i++)
 		{
 			switch (_board[i])
 			{
 			case 1:
-				num += 101;
+				_materialEval += 101;
 				break;
 			case 2:
-				num += 300;
+				_materialEval += 300;
 				_whiteLargePiecesVal += 300;
 				break;
 			case 3:
-				num += 321;
+				_materialEval += 321;
 				_whiteLargePiecesVal += 321;
 				break;
 			case 4:
-				num += 500;
+				_materialEval += 500;
 				_whiteLargePiecesVal += 500;
 				break;
 			case 5:
-				num += 915;
+				_materialEval += 915;
 				_whiteLargePiecesVal += 915;
 				break;
 			case 6:
-				num += 10000;
+				_materialEval += 10000;
 				break;
 			case 9:
-				num -= 101;
+				_materialEval -= 101;
 				break;
 			case 10:
-				num -= 300;
+				_materialEval -= 300;
 				_blackLargePiecesVal -= 300;
 				break;
 			case 11:
-				num -= 321;
+				_materialEval -= 321;
 				_blackLargePiecesVal -= 321;
 				break;
 			case 12:
-				num -= 500;
+				_materialEval -= 500;
 				_blackLargePiecesVal -= 500;
 				break;
 			case 13:
-				num -= 915;
+				_materialEval -= 915;
 				_blackLargePiecesVal -= 915;
 				break;
 			case 14:
-				num -= 10000;
+				_materialEval -= 10000;
 				break;
 			}
 		}
-		return num;
+		return _materialEval;
 	}
 
-	// Token: 0x0600000D RID: 13 RVA: 0x0000389C File Offset: 0x00001A9C
+	// Token: 0x0600000D RID: 13 RVA: 0x000038A8 File Offset: 0x00001AA8
 	private static int CalculateCenterControl(byte[] _board)
 	{
-		int num = 0;
-		byte b = _board[27];
+		int _controlScore = 0;
+		byte _piece = _board[27];
 		bool flag = _board[35] == 1;
 		if (flag)
 		{
 			bool flag2 = _board[42] == 1;
 			if (flag2)
 			{
-				num += 15;
+				_controlScore += 15;
 			}
 			bool flag3 = _board[44] == 3;
 			if (flag3)
 			{
-				num += 5;
+				_controlScore += 5;
 			}
 			bool flag4 = _board[45] == 2;
 			if (flag4)
 			{
-				num += 15;
+				_controlScore += 15;
 			}
 			else
 			{
 				bool flag5 = _board[52] == 2;
 				if (flag5)
 				{
-					num += 10;
+					_controlScore += 10;
 				}
 			}
-			num += 10;
+			_controlScore += 10;
 		}
 		bool flag6 = _board[36] == 1;
 		if (flag6)
@@ -1971,22 +1972,22 @@ internal class Program
 			bool flag7 = _board[45] == 1;
 			if (flag7)
 			{
-				num += 5;
+				_controlScore += 5;
 			}
 			bool flag8 = _board[42] == 2;
 			if (flag8)
 			{
-				num += 5;
+				_controlScore += 5;
 			}
 			else
 			{
 				bool flag9 = _board[52] == 2;
 				if (flag9)
 				{
-					num += 3;
+					_controlScore += 3;
 				}
 			}
-			num += 5;
+			_controlScore += 5;
 		}
 		bool flag10 = _board[27] == 9;
 		if (flag10)
@@ -1994,27 +1995,27 @@ internal class Program
 			bool flag11 = _board[18] == 9;
 			if (flag11)
 			{
-				num -= 15;
+				_controlScore -= 15;
 			}
 			bool flag12 = _board[20] == 11;
 			if (flag12)
 			{
-				num -= 5;
+				_controlScore -= 5;
 			}
 			bool flag13 = _board[21] == 10;
 			if (flag13)
 			{
-				num -= 15;
+				_controlScore -= 15;
 			}
 			else
 			{
 				bool flag14 = _board[12] == 10;
 				if (flag14)
 				{
-					num -= 10;
+					_controlScore -= 10;
 				}
 			}
-			num -= 10;
+			_controlScore -= 10;
 		}
 		bool flag15 = _board[36] == 9;
 		if (flag15)
@@ -2022,111 +2023,111 @@ internal class Program
 			bool flag16 = _board[21] == 9;
 			if (flag16)
 			{
-				num -= 5;
+				_controlScore -= 5;
 			}
 			bool flag17 = _board[18] == 10;
 			if (flag17)
 			{
-				num -= 5;
+				_controlScore -= 5;
 			}
 			else
 			{
 				bool flag18 = _board[11] == 10;
 				if (flag18)
 				{
-					num -= 3;
+					_controlScore -= 3;
 				}
 			}
-			num -= 5;
+			_controlScore -= 5;
 		}
-		return num;
+		return _controlScore;
 	}
 
-	// Token: 0x0600000E RID: 14 RVA: 0x00003A08 File Offset: 0x00001C08
+	// Token: 0x0600000E RID: 14 RVA: 0x00003A14 File Offset: 0x00001C14
 	private static int CalculateKingSafety(byte[] _board)
 	{
-		int num = 0;
-		num -= (int)Program.CountAttacks(_board, (int)Program.wkPos, true);
-		num += (int)Program.CountAttacks(_board, (int)Program.bkPos, false);
-		return num * 40;
+		int _kingSafety = 0;
+		_kingSafety -= (int)Program.CountAttacks(_board, (int)Program.wkPos, true);
+		_kingSafety += (int)Program.CountAttacks(_board, (int)Program.bkPos, false);
+		return _kingSafety * 40;
 	}
 
-	// Token: 0x0600000F RID: 15 RVA: 0x00003A40 File Offset: 0x00001C40
+	// Token: 0x0600000F RID: 15 RVA: 0x00003A4C File Offset: 0x00001C4C
 	private static int CalculatePawnStructure(byte[] _board)
 	{
-		int num = 0;
-		int num2 = 0;
+		int whitePawnStructure = 0;
+		int blackPawnStructure = 0;
 		for (int i = 0; i < 8; i++)
 		{
 			for (int j = 0; j < 8; j++)
 			{
-				int num3 = (int)_board[i * 8 + j];
-				bool flag = num3 == 1;
+				int piece = (int)_board[i * 8 + j];
+				bool flag = piece == 1;
 				if (flag)
 				{
 					bool flag2 = Program.IsIsolatedPawn(_board, i, j, true);
 					if (flag2)
 					{
-						num -= 15;
+						whitePawnStructure -= 15;
 					}
 				}
 				else
 				{
-					bool flag3 = num3 == 9;
+					bool flag3 = piece == 9;
 					if (flag3)
 					{
 						bool flag4 = Program.IsIsolatedPawn(_board, i, j, false);
 						if (flag4)
 						{
-							num2 -= 15;
+							blackPawnStructure -= 15;
 						}
 					}
 				}
 			}
 		}
-		return num - num2;
+		return whitePawnStructure - blackPawnStructure;
 	}
 
-	// Token: 0x06000010 RID: 16 RVA: 0x00003AD4 File Offset: 0x00001CD4
+	// Token: 0x06000010 RID: 16 RVA: 0x00003AE0 File Offset: 0x00001CE0
 	private static byte CountAttacks(byte[] _board, int _ourPos, bool _weWhite)
 	{
-		byte b = 0;
-		for (byte b2 = 0; b2 < 64; b2 += 1)
+		byte _attacks = 0;
+		for (byte i = 0; i < 64; i += 1)
 		{
-			byte b3 = _board[(int)b2];
-			bool flag = (_weWhite && b3 > 8) || (!_weWhite && b3 < 8);
+			byte _enemy = _board[(int)i];
+			bool flag = (_weWhite && _enemy > 8) || (!_weWhite && _enemy < 8);
 			if (flag)
 			{
-				bool flag2 = Program.CanAttack(_board, b3, b2 % 8, b2 / 8, (byte)(_ourPos % 8), (byte)(_ourPos / 8));
+				bool flag2 = Program.CanAttack(_board, _enemy, i % 8, i / 8, (byte)(_ourPos % 8), (byte)(_ourPos / 8));
 				if (flag2)
 				{
-					b += 1;
+					_attacks += 1;
 				}
 			}
 		}
-		return b;
+		return _attacks;
 	}
 
-	// Token: 0x06000011 RID: 17 RVA: 0x00003B44 File Offset: 0x00001D44
+	// Token: 0x06000011 RID: 17 RVA: 0x00003B50 File Offset: 0x00001D50
 	private static bool IsIsolatedPawn(byte[] _board, int _x, int _y, bool isWhite)
 	{
 		bool flag = _y > 0 && _y < 7;
 		bool result;
 		if (flag)
 		{
-			bool flag2;
-			bool flag3;
+			bool hasLeftPawn;
+			bool hasRightPawn;
 			if (isWhite)
 			{
-				flag2 = (_board[_y * 8 + 9 + _x] == 1);
-				flag3 = (_board[_y * 8 + 7 + _x] == 1);
+				hasLeftPawn = (_board[_y * 8 + 9 + _x] == 1);
+				hasRightPawn = (_board[_y * 8 + 7 + _x] == 1);
 			}
 			else
 			{
-				flag2 = (_board[_y * 8 - 9 + _x] == 9);
-				flag3 = (_board[_y * 8 - 7 + _x] == 9);
+				hasLeftPawn = (_board[_y * 8 - 9 + _x] == 9);
+				hasRightPawn = (_board[_y * 8 - 7 + _x] == 9);
 			}
-			result = (!flag2 && !flag3);
+			result = (!hasLeftPawn && !hasRightPawn);
 		}
 		else
 		{
@@ -2135,49 +2136,49 @@ internal class Program
 		return result;
 	}
 
-	// Token: 0x06000012 RID: 18 RVA: 0x00003BBC File Offset: 0x00001DBC
+	// Token: 0x06000012 RID: 18 RVA: 0x00003BC8 File Offset: 0x00001DC8
 	private static bool CanAttack(byte[] _board, byte _enemy, byte _fromX, byte _fromY, byte _toX, byte _toY)
 	{
-		int num = Math.Abs((int)(_toX - _fromX));
-		int num2 = Math.Abs((int)(_toY - _fromY));
+		int _distX = Math.Abs((int)(_toX - _fromX));
+		int _distY = Math.Abs((int)(_toY - _fromY));
 		switch (_enemy)
 		{
 		case 1:
 		case 9:
-			return num == 1 && num2 == 1;
+			return _distX == 1 && _distY == 1;
 		case 2:
 		case 10:
-			return (num == 2 && num2 == 1) || (num == 1 && num2 == 2);
+			return (_distX == 2 && _distY == 1) || (_distX == 1 && _distY == 2);
 		case 3:
 		case 11:
 		{
-			bool flag = num == num2;
+			bool flag = _distX == _distY;
 			return flag && !Program.CheckForDiagonalBlocking(_board, _fromX, _fromY, _toX, _toY);
 		}
 		case 4:
 		case 12:
 		{
-			bool flag2 = num == 0 || num2 == 0;
+			bool flag2 = _distX == 0 || _distY == 0;
 			return flag2 && !Program.CheckForVerticalBlocking(_board, 8 * _fromY + _fromX, 8 * _toY + _toX) && !Program.CheckForHorizontalBlocking(_board, 8 * _fromY + _fromX, 8 * _toY + _toX);
 		}
 		case 5:
 		case 13:
 		{
-			bool flag3 = num == 0 || num2 == 0 || num == num2;
+			bool flag3 = _distX == 0 || _distY == 0 || _distX == _distY;
 			return flag3 && (!Program.CheckForVerticalBlocking(_board, 8 * _fromY + _fromX, 8 * _toY + _toX) && !Program.CheckForDiagonalBlocking(_board, _fromX, _fromY, _toX, _toY)) && !Program.CheckForHorizontalBlocking(_board, 8 * _fromY + _fromX, 8 * _toY + _toX);
 		}
 		}
 		return false;
 	}
 
-	// Token: 0x06000013 RID: 19 RVA: 0x00003D28 File Offset: 0x00001F28
+	// Token: 0x06000013 RID: 19 RVA: 0x00003D34 File Offset: 0x00001F34
 	private static bool CheckForDiagonalBlocking(byte[] _board, byte _fromX, byte _fromY, byte _toX, byte _toY)
 	{
-		for (byte b = Math.Min(_fromY, _toY); b < Math.Max(_fromY, _toY); b += 1)
+		for (byte y = Math.Min(_fromY, _toY); y < Math.Max(_fromY, _toY); y += 1)
 		{
-			for (byte b2 = Math.Min(_fromX, _toX); b2 < Math.Max(_fromX, _toX); b2 += 1)
+			for (byte x = Math.Min(_fromX, _toX); x < Math.Max(_fromX, _toX); x += 1)
 			{
-				bool flag = _board[(int)(b * 8 + b2)] > 0;
+				bool flag = _board[(int)(y * 8 + x)] > 0;
 				if (flag)
 				{
 					return true;
@@ -2187,7 +2188,7 @@ internal class Program
 		return false;
 	}
 
-	// Token: 0x06000014 RID: 20 RVA: 0x00003D94 File Offset: 0x00001F94
+	// Token: 0x06000014 RID: 20 RVA: 0x00003DA0 File Offset: 0x00001FA0
 	private static bool CheckForVerticalBlocking(byte[] _board, byte _from, byte _to)
 	{
 		bool flag = Math.Abs((int)(_from - _to)) % 8 != 0;
@@ -2198,9 +2199,9 @@ internal class Program
 		}
 		else
 		{
-			for (byte b = Math.Min(_from, _to) + 8; b < Math.Max(_from, _to); b += 8)
+			for (byte position = Math.Min(_from, _to) + 8; position < Math.Max(_from, _to); position += 8)
 			{
-				bool flag2 = _board[(int)b] > 0;
+				bool flag2 = _board[(int)position] > 0;
 				if (flag2)
 				{
 					return true;
@@ -2211,7 +2212,7 @@ internal class Program
 		return result;
 	}
 
-	// Token: 0x06000015 RID: 21 RVA: 0x00003DF0 File Offset: 0x00001FF0
+	// Token: 0x06000015 RID: 21 RVA: 0x00003DFC File Offset: 0x00001FFC
 	private static bool CheckForHorizontalBlocking(byte[] _board, byte _from, byte _to)
 	{
 		bool flag = Math.Abs((int)(_from - _to)) > 7;
@@ -2222,9 +2223,9 @@ internal class Program
 		}
 		else
 		{
-			for (byte b = Math.Min(_from, _to) + 1; b < Math.Max(_from, _to); b += 1)
+			for (byte position = Math.Min(_from, _to) + 1; position < Math.Max(_from, _to); position += 1)
 			{
-				bool flag2 = _board[(int)b] > 0;
+				bool flag2 = _board[(int)position] > 0;
 				if (flag2)
 				{
 					return true;
@@ -2235,49 +2236,49 @@ internal class Program
 		return result;
 	}
 
-	// Token: 0x06000016 RID: 22 RVA: 0x00003E48 File Offset: 0x00002048
+	// Token: 0x06000016 RID: 22 RVA: 0x00003E54 File Offset: 0x00002054
 	private static List<Program.Move> GenerateAllMoves(byte[] _thisboard, bool _isWhiteTurn)
 	{
-		List<Program.Move> list = new List<Program.Move>();
-		for (byte b = 0; b < 64; b += 1)
+		List<Program.Move> _moves = new List<Program.Move>();
+		for (byte i = 0; i < 64; i += 1)
 		{
-			byte b2 = _thisboard[(int)b];
-			bool flag = (_isWhiteTurn && b2 < 8) || (!_isWhiteTurn && b2 > 8);
+			byte _piece = _thisboard[(int)i];
+			bool flag = (_isWhiteTurn && _piece < 8) || (!_isWhiteTurn && _piece > 8);
 			if (flag)
 			{
-				switch (b2)
+				switch (_piece)
 				{
 				case 1:
 				case 9:
-					list.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GeneratePawnMoves(_thisboard, b, _isWhiteTurn), _isWhiteTurn));
+					_moves.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GeneratePawnMoves(_thisboard, i, _isWhiteTurn), _isWhiteTurn));
 					break;
 				case 2:
 				case 10:
-					list.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateKnightMoves(_thisboard, b, b2, _isWhiteTurn), _isWhiteTurn));
+					_moves.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateKnightMoves(_thisboard, i, _piece, _isWhiteTurn), _isWhiteTurn));
 					break;
 				case 3:
 				case 11:
-					list.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateBishopMoves(_thisboard, b, b2, _isWhiteTurn), _isWhiteTurn));
+					_moves.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateBishopMoves(_thisboard, i, _piece, _isWhiteTurn), _isWhiteTurn));
 					break;
 				case 4:
 				case 12:
-					list.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateRookMoves(_thisboard, b, b2, _isWhiteTurn), _isWhiteTurn));
+					_moves.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateRookMoves(_thisboard, i, _piece, _isWhiteTurn), _isWhiteTurn));
 					break;
 				case 5:
 				case 13:
-					list.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateQueenMoves(_thisboard, b, b2, _isWhiteTurn), _isWhiteTurn));
+					_moves.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateQueenMoves(_thisboard, i, _piece, _isWhiteTurn), _isWhiteTurn));
 					break;
 				case 6:
 				case 14:
-					list.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateKingMoves(_thisboard, b, b2, _isWhiteTurn), _isWhiteTurn));
+					_moves.AddRange(Program.IsMoveLegalNoCheckCriteria(_thisboard, Program.GenerateKingMoves(_thisboard, i, _piece, _isWhiteTurn), _isWhiteTurn));
 					break;
 				}
 			}
 		}
-		return list;
+		return _moves;
 	}
 
-	// Token: 0x06000017 RID: 23 RVA: 0x00003F84 File Offset: 0x00002184
+	// Token: 0x06000017 RID: 23 RVA: 0x00003F90 File Offset: 0x00002190
 	private static List<Program.Move> IsMoveLegalNoCheckCriteria(byte[] _board, List<Program.Move> _moves, bool _isKingWhite)
 	{
 		for (int i = 0; i < _moves.Count; i++)
@@ -2292,16 +2293,16 @@ internal class Program
 		return _moves;
 	}
 
-	// Token: 0x06000018 RID: 24 RVA: 0x00003FD8 File Offset: 0x000021D8
+	// Token: 0x06000018 RID: 24 RVA: 0x00003FE4 File Offset: 0x000021E4
 	private static byte[] SimulateMove(byte[] _oldBoard, Program.Move move)
 	{
-		byte[] array = (byte[])_oldBoard.Clone();
-		array[(int)move.To] = move.Piece;
-		array[(int)move.From] = 0;
-		return array;
+		byte[] _newBoard = (byte[])_oldBoard.Clone();
+		_newBoard[(int)move.To] = move.Piece;
+		_newBoard[(int)move.From] = 0;
+		return _newBoard;
 	}
 
-	// Token: 0x06000019 RID: 25 RVA: 0x00004010 File Offset: 0x00002210
+	// Token: 0x06000019 RID: 25 RVA: 0x0000401C File Offset: 0x0000221C
 	private static int PositionsAmountTest(byte[] _board, int _depth, bool _isWhiteTurn)
 	{
 		bool flag = _depth == 0;
@@ -2312,18 +2313,18 @@ internal class Program
 		}
 		else
 		{
-			List<Program.Move> list = Program.GenerateAllMoves(_board, _isWhiteTurn);
-			int num = 0;
-			foreach (Program.Move move in list)
+			List<Program.Move> _moves = Program.GenerateAllMoves(_board, _isWhiteTurn);
+			int _amountOfPositions = 0;
+			foreach (Program.Move _move in _moves)
 			{
-				num += Program.PositionsAmountTest(Program.SimulateMove(_board, move), _depth - 1, !_isWhiteTurn);
+				_amountOfPositions += Program.PositionsAmountTest(Program.SimulateMove(_board, _move), _depth - 1, !_isWhiteTurn);
 			}
-			result = num;
+			result = _amountOfPositions;
 		}
 		return result;
 	}
 
-	// Token: 0x0600001A RID: 26 RVA: 0x00004090 File Offset: 0x00002290
+	// Token: 0x0600001A RID: 26 RVA: 0x0000409C File Offset: 0x0000229C
 	private static bool IsKingInCheck(byte[] _board, byte _kingPos, bool _kingColor)
 	{
 		bool flag = _kingPos == 64;
@@ -2331,25 +2332,25 @@ internal class Program
 		{
 			if (_kingColor)
 			{
-				for (byte b = 0; b < 64; b += 1)
+				for (byte i = 0; i < 64; i += 1)
 				{
-					bool flag2 = _board[(int)b] == 6;
+					bool flag2 = _board[(int)i] == 6;
 					if (flag2)
 					{
-						_kingPos = b;
-						b += 64;
+						_kingPos = i;
+						i += 64;
 					}
 				}
 			}
 			else
 			{
-				for (byte b2 = 0; b2 < 64; b2 += 1)
+				for (byte j = 0; j < 64; j += 1)
 				{
-					bool flag3 = _board[(int)b2] == 14;
+					bool flag3 = _board[(int)j] == 14;
 					if (flag3)
 					{
-						_kingPos = b2;
-						b2 += 64;
+						_kingPos = j;
+						j += 64;
 					}
 				}
 			}
@@ -2357,7 +2358,7 @@ internal class Program
 		return Program.CountAttacks(_board, (int)_kingPos, _kingColor) > 0;
 	}
 
-	// Token: 0x0600001B RID: 27 RVA: 0x00004134 File Offset: 0x00002334
+	// Token: 0x0600001B RID: 27 RVA: 0x00004140 File Offset: 0x00002340
 	private static int AlphaBetaSearch(byte[] _board, int depth, int alpha, int beta, bool maximizingPlayer, out Program.Move bestMove)
 	{
 		bestMove = null;
@@ -2369,22 +2370,21 @@ internal class Program
 		}
 		else
 		{
-			List<Program.Move> list = Program.GenerateAllMoves(_board, maximizingPlayer);
+			List<Program.Move> moves = Program.GenerateAllMoves(_board, maximizingPlayer);
 			if (maximizingPlayer)
 			{
-				int num = -999999;
-				foreach (Program.Move move in list)
+				int maxEval = -999999;
+				foreach (Program.Move move in moves)
 				{
-					byte[] board = Program.SimulateMove(_board, move);
-					Program.Move move2;
-					int num2 = Program.AlphaBetaSearch(board, depth - 1, alpha, beta, false, out move2);
-					bool flag2 = num2 > num;
+					byte[] newBoard = Program.SimulateMove(_board, move);
+					int eval = Program.AlphaBetaEvalSearch(newBoard, depth - 1, alpha, beta, false);
+					bool flag2 = eval > maxEval;
 					if (flag2)
 					{
-						num = num2;
+						maxEval = eval;
 						bestMove = move;
 					}
-					alpha = Math.Max(alpha, num2);
+					alpha = Math.Max(alpha, eval);
 					bool flag3 = beta <= alpha;
 					if (flag3)
 					{
@@ -2392,23 +2392,22 @@ internal class Program
 						break;
 					}
 				}
-				result = num;
+				result = maxEval;
 			}
 			else
 			{
-				int num3 = 999999;
-				foreach (Program.Move move3 in list)
+				int minEval = 999999;
+				foreach (Program.Move move2 in moves)
 				{
-					byte[] board2 = Program.SimulateMove(_board, move3);
-					Program.Move move4;
-					int num4 = Program.AlphaBetaSearch(board2, depth - 1, alpha, beta, true, out move4);
-					bool flag4 = num4 < num3;
+					byte[] newBoard2 = Program.SimulateMove(_board, move2);
+					int eval2 = Program.AlphaBetaEvalSearch(newBoard2, depth - 1, alpha, beta, true);
+					bool flag4 = eval2 < minEval;
 					if (flag4)
 					{
-						num3 = num4;
-						bestMove = move3;
+						minEval = eval2;
+						bestMove = move2;
 					}
-					beta = Math.Min(beta, num4);
+					beta = Math.Min(beta, eval2);
 					bool flag5 = beta <= alpha;
 					if (flag5)
 					{
@@ -2416,198 +2415,258 @@ internal class Program
 						break;
 					}
 				}
-				result = num3;
+				result = minEval;
 			}
 		}
 		return result;
 	}
 
-	// Token: 0x0600001C RID: 28 RVA: 0x000042B8 File Offset: 0x000024B8
-	private static List<Program.Move> GeneratePawnMoves(byte[] _board, byte _position, bool _isWhite)
+	// Token: 0x0600001C RID: 28 RVA: 0x000042C0 File Offset: 0x000024C0
+	private static int AlphaBetaEvalSearch(byte[] _board, int depth, int alpha, int beta, bool maximizingPlayer)
 	{
-		List<Program.Move> list = new List<Program.Move>();
-		int num = _isWhite ? -8 : 8;
-		byte b = _isWhite ? 6 : 1;
-		byte b2 = _isWhite ? 0 : 7;
-		byte b3 = _position % 8;
-		int num2 = (int)_position + num;
-		bool flag = num2 >= 0 && num2 < 64 && _board[num2] == 0;
+		bool flag = depth == 0;
+		int result;
 		if (flag)
 		{
-			bool flag2 = num2 / 8 == (int)b2;
+			result = Program.AdvEvaluate(_board, false, false);
+		}
+		else
+		{
+			List<Program.Move> moves = Program.GenerateAllMoves(_board, maximizingPlayer);
+			if (maximizingPlayer)
+			{
+				int maxEval = -999999;
+				foreach (Program.Move move in moves)
+				{
+					byte[] newBoard = Program.SimulateMove(_board, move);
+					int eval = Program.AlphaBetaEvalSearch(newBoard, depth - 1, alpha, beta, false);
+					bool flag2 = eval > maxEval;
+					if (flag2)
+					{
+						maxEval = eval;
+					}
+					alpha = Math.Max(alpha, eval);
+					bool flag3 = beta <= alpha;
+					if (flag3)
+					{
+						Program.gSkippedPositions++;
+						break;
+					}
+				}
+				result = maxEval;
+			}
+			else
+			{
+				int minEval = 999999;
+				foreach (Program.Move move2 in moves)
+				{
+					byte[] newBoard2 = Program.SimulateMove(_board, move2);
+					int eval2 = Program.AlphaBetaEvalSearch(newBoard2, depth - 1, alpha, beta, true);
+					bool flag4 = eval2 < minEval;
+					if (flag4)
+					{
+						minEval = eval2;
+					}
+					beta = Math.Min(beta, eval2);
+					bool flag5 = beta <= alpha;
+					if (flag5)
+					{
+						Program.gSkippedPositions++;
+						break;
+					}
+				}
+				result = minEval;
+			}
+		}
+		return result;
+	}
+
+	// Token: 0x0600001D RID: 29 RVA: 0x00004434 File Offset: 0x00002634
+	private static List<Program.Move> GeneratePawnMoves(byte[] _board, byte _position, bool _isWhite)
+	{
+		List<Program.Move> _generatedMoves = new List<Program.Move>();
+		int _direction = _isWhite ? -8 : 8;
+		byte _startRow = _isWhite ? 6 : 1;
+		byte _promotionRow = _isWhite ? 0 : 7;
+		byte _xPos = _position % 8;
+		int _newPosition = (int)_position + _direction;
+		bool flag = _newPosition >= 0 && _newPosition < 64 && _board[_newPosition] == 0;
+		if (flag)
+		{
+			bool flag2 = _newPosition / 8 == (int)_promotionRow;
 			if (flag2)
 			{
-				list.Insert(0, new Program.Move
+				_generatedMoves.Insert(0, new Program.Move
 				{
 					From = _position,
-					To = (byte)num2,
+					To = (byte)_newPosition,
 					Piece = (_isWhite ? 2 : 10),
 					CapturedPiece = 0
 				});
-				list.Insert(0, new Program.Move
+				_generatedMoves.Insert(0, new Program.Move
 				{
 					From = _position,
-					To = (byte)num2,
+					To = (byte)_newPosition,
 					Piece = (_isWhite ? 3 : 11),
 					CapturedPiece = 0
 				});
-				list.Insert(0, new Program.Move
+				_generatedMoves.Insert(0, new Program.Move
 				{
 					From = _position,
-					To = (byte)num2,
+					To = (byte)_newPosition,
 					Piece = (_isWhite ? 4 : 12),
 					CapturedPiece = 0
 				});
-				list.Insert(0, new Program.Move
+				_generatedMoves.Insert(0, new Program.Move
 				{
 					From = _position,
-					To = (byte)num2,
+					To = (byte)_newPosition,
 					Piece = (_isWhite ? 5 : 13),
 					CapturedPiece = 0
 				});
 			}
 			else
 			{
-				list.Add(new Program.Move
+				_generatedMoves.Add(new Program.Move
 				{
 					From = _position,
-					To = (byte)num2,
+					To = (byte)_newPosition,
 					Piece = (_isWhite ? 1 : 9),
 					CapturedPiece = 0
 				});
 			}
-			bool flag3 = _position / 8 == b && _board[num2 + num] == 0;
+			bool flag3 = _position / 8 == _startRow && _board[_newPosition + _direction] == 0;
 			if (flag3)
 			{
-				list.Add(new Program.Move
+				_generatedMoves.Add(new Program.Move
 				{
 					From = _position,
-					To = (byte)(num2 + num),
+					To = (byte)(_newPosition + _direction),
 					Piece = _board[(int)_position],
 					CapturedPiece = 0
 				});
 			}
 		}
-		bool flag4 = b3 > 0;
+		bool flag4 = _xPos > 0;
 		if (flag4)
 		{
-			byte b4 = _isWhite ? (_position - 9) : (_position + 7);
-			bool flag5 = b4 >= 0 && b4 < 64;
+			byte _attackPosition = _isWhite ? (_position - 9) : (_position + 7);
+			bool flag5 = _attackPosition >= 0 && _attackPosition < 64;
 			if (flag5)
 			{
-				byte b5 = _board[(int)b4];
-				bool flag6 = b5 != 0 && ((_isWhite && b5 > 8) || (!_isWhite && b5 < 8));
+				byte _target = _board[(int)_attackPosition];
+				bool flag6 = _target != 0 && ((_isWhite && _target > 8) || (!_isWhite && _target < 8));
 				if (flag6)
 				{
-					bool flag7 = b4 / 8 == b2;
+					bool flag7 = _attackPosition / 8 == _promotionRow;
 					if (flag7)
 					{
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = (byte)num2,
+							To = (byte)_newPosition,
 							Piece = (_isWhite ? 2 : 10),
 							CapturedPiece = 0
 						});
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = (byte)num2,
+							To = (byte)_newPosition,
 							Piece = (_isWhite ? 3 : 11),
 							CapturedPiece = 0
 						});
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = (byte)num2,
+							To = (byte)_newPosition,
 							Piece = (_isWhite ? 4 : 12),
 							CapturedPiece = 0
 						});
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = (byte)num2,
+							To = (byte)_newPosition,
 							Piece = (_isWhite ? 5 : 13),
 							CapturedPiece = 0
 						});
 					}
 					else
 					{
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = b4,
+							To = _attackPosition,
 							Piece = (_isWhite ? 1 : 9),
-							CapturedPiece = b5
+							CapturedPiece = _target
 						});
 					}
 				}
 			}
 		}
-		bool flag8 = b3 < 7;
+		bool flag8 = _xPos < 7;
 		if (flag8)
 		{
-			byte b6 = _isWhite ? (_position - 7) : (_position + 9);
-			bool flag9 = b6 >= 0 && b6 < 64;
+			byte _attackPosition2 = _isWhite ? (_position - 7) : (_position + 9);
+			bool flag9 = _attackPosition2 >= 0 && _attackPosition2 < 64;
 			if (flag9)
 			{
-				byte b7 = _board[(int)b6];
-				bool flag10 = b7 != 0 && ((_isWhite && b7 > 8) || (!_isWhite && b7 < 8));
+				byte _target2 = _board[(int)_attackPosition2];
+				bool flag10 = _target2 != 0 && ((_isWhite && _target2 > 8) || (!_isWhite && _target2 < 8));
 				if (flag10)
 				{
-					bool flag11 = b6 / 8 == b2;
+					bool flag11 = _attackPosition2 / 8 == _promotionRow;
 					if (flag11)
 					{
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = (byte)num2,
+							To = (byte)_newPosition,
 							Piece = (_isWhite ? 2 : 10),
 							CapturedPiece = 0
 						});
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = (byte)num2,
+							To = (byte)_newPosition,
 							Piece = (_isWhite ? 3 : 11),
 							CapturedPiece = 0
 						});
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = (byte)num2,
+							To = (byte)_newPosition,
 							Piece = (_isWhite ? 4 : 12),
 							CapturedPiece = 0
 						});
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = (byte)num2,
+							To = (byte)_newPosition,
 							Piece = (_isWhite ? 5 : 13),
 							CapturedPiece = 0
 						});
 					}
 					else
 					{
-						list.Insert(0, new Program.Move
+						_generatedMoves.Insert(0, new Program.Move
 						{
 							From = _position,
-							To = b6,
+							To = _attackPosition2,
 							Piece = (_isWhite ? 1 : 9),
-							CapturedPiece = b7
+							CapturedPiece = _target2
 						});
 					}
 				}
 			}
 		}
-		return list;
+		return _generatedMoves;
 	}
 
-	// Token: 0x0600001D RID: 29 RVA: 0x0000479C File Offset: 0x0000299C
+	// Token: 0x0600001E RID: 30 RVA: 0x00004918 File Offset: 0x00002B18
 	private static List<Program.Move> GenerateKnightMoves(byte[] _board, byte _position, byte _piece, bool _isWhite)
 	{
-		List<Program.Move> list = new List<Program.Move>();
-		int[] array = new int[]
+		List<Program.Move> _moves = new List<Program.Move>();
+		int[] _knightOffsets = new int[]
 		{
 			-10,
 			6,
@@ -2618,52 +2677,52 @@ internal class Program
 			-6,
 			10
 		};
-		byte b = _position % 8;
+		byte _xPos = _position % 8;
 		for (int i = 0; i < 8; i++)
 		{
-			bool flag = (i < 2 && b > 1) || (i > 1 && i < 4 && b > 0) || (i > 3 && i < 6 && b < 7) || (i > 5 && b < 6);
+			bool flag = (i < 2 && _xPos > 1) || (i > 1 && i < 4 && _xPos > 0) || (i > 3 && i < 6 && _xPos < 7) || (i > 5 && _xPos < 6);
 			if (flag)
 			{
-				int num = (int)_position + array[i];
-				bool flag2 = num >= 0 && num < 64;
+				int _newPosition = (int)_position + _knightOffsets[i];
+				bool flag2 = _newPosition >= 0 && _newPosition < 64;
 				if (flag2)
 				{
-					byte b2 = _board[num];
-					bool flag3 = b2 == 0;
+					byte _target = _board[_newPosition];
+					bool flag3 = _target == 0;
 					if (flag3)
 					{
-						list.Add(new Program.Move
+						_moves.Add(new Program.Move
 						{
 							From = _position,
-							To = (byte)num,
+							To = (byte)_newPosition,
 							Piece = _piece,
 							CapturedPiece = 0
 						});
 					}
 					else
 					{
-						bool flag4 = _isWhite && b2 > 8;
+						bool flag4 = _isWhite && _target > 8;
 						if (flag4)
 						{
-							list.Insert(0, new Program.Move
+							_moves.Insert(0, new Program.Move
 							{
 								From = _position,
-								To = (byte)num,
+								To = (byte)_newPosition,
 								Piece = _piece,
-								CapturedPiece = b2
+								CapturedPiece = _target
 							});
 						}
 						else
 						{
-							bool flag5 = !_isWhite && b2 < 8;
+							bool flag5 = !_isWhite && _target < 8;
 							if (flag5)
 							{
-								list.Insert(0, new Program.Move
+								_moves.Insert(0, new Program.Move
 								{
 									From = _position,
-									To = (byte)num,
+									To = (byte)_newPosition,
 									Piece = _piece,
-									CapturedPiece = b2
+									CapturedPiece = _target
 								});
 							}
 						}
@@ -2671,14 +2730,14 @@ internal class Program
 				}
 			}
 		}
-		return list;
+		return _moves;
 	}
 
-	// Token: 0x0600001E RID: 30 RVA: 0x00004910 File Offset: 0x00002B10
+	// Token: 0x0600001F RID: 31 RVA: 0x00004A8C File Offset: 0x00002C8C
 	private static List<Program.Move> GenerateBishopMoves(byte[] _board, byte _position, byte _piece, bool _isWhite)
 	{
-		List<Program.Move> list = new List<Program.Move>();
-		int[] array = new int[]
+		List<Program.Move> _generatedMoves = new List<Program.Move>();
+		int[] _bishopOffsets = new int[]
 		{
 			-9,
 			7,
@@ -2687,127 +2746,127 @@ internal class Program
 		};
 		for (int i = 0; i < 4; i++)
 		{
-			byte b = _position % 8;
-			bool flag = (i < 2 && b > 0) || (i > 1 && b < 7);
+			byte _xPos = _position % 8;
+			bool flag = (i < 2 && _xPos > 0) || (i > 1 && _xPos < 7);
 			if (flag)
 			{
-				int num = (int)_position + array[i];
-				while (num >= 0 && num < 64)
+				int _newPosition = (int)_position + _bishopOffsets[i];
+				while (_newPosition >= 0 && _newPosition < 64)
 				{
-					byte b2 = _board[num];
-					bool flag2 = b2 == 0;
+					byte _target = _board[_newPosition];
+					bool flag2 = _target == 0;
 					if (!flag2)
 					{
-						bool flag3 = (_isWhite && b2 > 8) || (!_isWhite && b2 < 8);
+						bool flag3 = (_isWhite && _target > 8) || (!_isWhite && _target < 8);
 						if (flag3)
 						{
-							list.Insert(0, new Program.Move
+							_generatedMoves.Insert(0, new Program.Move
 							{
 								From = _position,
-								To = (byte)num,
+								To = (byte)_newPosition,
 								Piece = _piece,
-								CapturedPiece = b2
+								CapturedPiece = _target
 							});
 						}
 						break;
 					}
-					list.Add(new Program.Move
+					_generatedMoves.Add(new Program.Move
 					{
 						From = _position,
-						To = (byte)num,
+						To = (byte)_newPosition,
 						Piece = _piece,
 						CapturedPiece = 0
 					});
-					b = (byte)(num % 8);
-					bool flag4 = (i < 2 && b > 0) || (i > 1 && b < 7);
+					_xPos = (byte)(_newPosition % 8);
+					bool flag4 = (i < 2 && _xPos > 0) || (i > 1 && _xPos < 7);
 					if (flag4)
 					{
-						num += array[i];
+						_newPosition += _bishopOffsets[i];
 					}
 					else
 					{
-						num = 64;
+						_newPosition = 64;
 					}
 				}
 			}
 		}
-		return list;
+		return _generatedMoves;
 	}
 
-	// Token: 0x0600001F RID: 31 RVA: 0x00004A68 File Offset: 0x00002C68
+	// Token: 0x06000020 RID: 32 RVA: 0x00004BE4 File Offset: 0x00002DE4
 	private static List<Program.Move> GenerateRookMoves(byte[] _board, byte _position, byte _piece, bool _isWhite)
 	{
-		List<Program.Move> list = new List<Program.Move>();
-		int[] array = new int[]
+		List<Program.Move> _generatedMoves = new List<Program.Move>();
+		int[] _rookOffsets = new int[]
 		{
 			-1,
 			-8,
 			8,
 			1
 		};
-		byte b = _position % 8;
+		byte _xPos = _position % 8;
 		for (int i = 0; i < 4; i++)
 		{
-			bool flag = (i < 1 && b > 0) || i == 1 || i == 2 || (i > 2 && b < 7);
+			bool flag = (i < 1 && _xPos > 0) || i == 1 || i == 2 || (i > 2 && _xPos < 7);
 			if (flag)
 			{
-				int num = (int)_position + array[i];
-				while (num >= 0 && num < 64)
+				int _newPosition = (int)_position + _rookOffsets[i];
+				while (_newPosition >= 0 && _newPosition < 64)
 				{
-					byte b2 = _board[num];
-					bool flag2 = b2 == 0;
+					byte _target = _board[_newPosition];
+					bool flag2 = _target == 0;
 					if (!flag2)
 					{
-						bool flag3 = (_isWhite && b2 > 8) || (!_isWhite && b2 < 8);
+						bool flag3 = (_isWhite && _target > 8) || (!_isWhite && _target < 8);
 						if (flag3)
 						{
-							list.Insert(0, new Program.Move
+							_generatedMoves.Insert(0, new Program.Move
 							{
 								From = _position,
-								To = (byte)num,
+								To = (byte)_newPosition,
 								Piece = _piece,
-								CapturedPiece = b2
+								CapturedPiece = _target
 							});
 						}
 						break;
 					}
-					list.Add(new Program.Move
+					_generatedMoves.Add(new Program.Move
 					{
 						From = _position,
-						To = (byte)num,
+						To = (byte)_newPosition,
 						Piece = _piece,
 						CapturedPiece = 0
 					});
-					b = (byte)(num % 8);
-					bool flag4 = (i < 1 && b > 0) || i == 1 || i == 2 || (i > 2 && b < 7);
+					_xPos = (byte)(_newPosition % 8);
+					bool flag4 = (i < 1 && _xPos > 0) || i == 1 || i == 2 || (i > 2 && _xPos < 7);
 					if (flag4)
 					{
-						num += array[i];
+						_newPosition += _rookOffsets[i];
 					}
 					else
 					{
-						num = 64;
+						_newPosition = 64;
 					}
 				}
 			}
 		}
-		return list;
+		return _generatedMoves;
 	}
 
-	// Token: 0x06000020 RID: 32 RVA: 0x00004BD0 File Offset: 0x00002DD0
+	// Token: 0x06000021 RID: 33 RVA: 0x00004D4C File Offset: 0x00002F4C
 	private static List<Program.Move> GenerateQueenMoves(byte[] _board, byte _position, byte _piece, bool _isWhite)
 	{
-		List<Program.Move> list = new List<Program.Move>();
-		list = Program.GenerateBishopMoves(_board, _position, _piece, _isWhite);
-		list.AddRange(Program.GenerateRookMoves(_board, _position, _piece, _isWhite));
-		return list;
+		List<Program.Move> _generatedMoves = new List<Program.Move>();
+		_generatedMoves = Program.GenerateBishopMoves(_board, _position, _piece, _isWhite);
+		_generatedMoves.AddRange(Program.GenerateRookMoves(_board, _position, _piece, _isWhite));
+		return _generatedMoves;
 	}
 
-	// Token: 0x06000021 RID: 33 RVA: 0x00004C04 File Offset: 0x00002E04
+	// Token: 0x06000022 RID: 34 RVA: 0x00004D80 File Offset: 0x00002F80
 	private static List<Program.Move> GenerateKingMoves(byte[] _board, byte _position, byte _piece, bool _isWhite)
 	{
-		List<Program.Move> list = new List<Program.Move>();
-		int[] array = new int[]
+		List<Program.Move> _generatedMoves = new List<Program.Move>();
+		int[] _kingOffsets = new int[]
 		{
 			-9,
 			-1,
@@ -2818,52 +2877,52 @@ internal class Program
 			1,
 			9
 		};
-		byte b = _position % 8;
+		byte _xPos = _position % 8;
 		for (int i = 0; i < 8; i++)
 		{
-			bool flag = (i < 3 && b > 0) || (i > 4 && i < 8 && b < 7) || i == 3 || i == 4;
+			bool flag = (i < 3 && _xPos > 0) || (i > 4 && i < 8 && _xPos < 7) || i == 3 || i == 4;
 			if (flag)
 			{
-				int num = (int)_position + array[i];
-				bool flag2 = num >= 0 && num < 64;
+				int _newPosition = (int)_position + _kingOffsets[i];
+				bool flag2 = _newPosition >= 0 && _newPosition < 64;
 				if (flag2)
 				{
-					byte b2 = _board[num];
-					bool flag3 = b2 == 0;
+					byte _target = _board[_newPosition];
+					bool flag3 = _target == 0;
 					if (flag3)
 					{
-						list.Add(new Program.Move
+						_generatedMoves.Add(new Program.Move
 						{
 							From = _position,
-							To = (byte)num,
+							To = (byte)_newPosition,
 							Piece = _piece,
-							CapturedPiece = b2
+							CapturedPiece = _target
 						});
 					}
 					else
 					{
-						bool flag4 = _isWhite && b2 > 8;
+						bool flag4 = _isWhite && _target > 8;
 						if (flag4)
 						{
-							list.Insert(0, new Program.Move
+							_generatedMoves.Insert(0, new Program.Move
 							{
 								From = _position,
-								To = (byte)num,
+								To = (byte)_newPosition,
 								Piece = _piece,
-								CapturedPiece = b2
+								CapturedPiece = _target
 							});
 						}
 						else
 						{
-							bool flag5 = !_isWhite && b2 < 8;
+							bool flag5 = !_isWhite && _target < 8;
 							if (flag5)
 							{
-								list.Insert(0, new Program.Move
+								_generatedMoves.Insert(0, new Program.Move
 								{
 									From = _position,
-									To = (byte)num,
+									To = (byte)_newPosition,
 									Piece = _piece,
-									CapturedPiece = b2
+									CapturedPiece = _target
 								});
 							}
 						}
@@ -2871,10 +2930,10 @@ internal class Program
 				}
 			}
 		}
-		return list;
+		return _generatedMoves;
 	}
 
-	// Token: 0x06000022 RID: 34 RVA: 0x00004D6C File Offset: 0x00002F6C
+	// Token: 0x06000023 RID: 35 RVA: 0x00004EE8 File Offset: 0x000030E8
 	private static void ApplyMove(byte[] _board, Program.Move move)
 	{
 		bool flag = move == null;
@@ -2948,31 +3007,31 @@ internal class Program
 		}
 	}
 
-	// Token: 0x06000023 RID: 35 RVA: 0x00004F08 File Offset: 0x00003108
+	// Token: 0x06000024 RID: 36 RVA: 0x00005084 File Offset: 0x00003284
 	private static bool GetTurn()
 	{
 		Console.Write("\n\tWhose turn? (W / Y / YES / 1  = player white turn): ");
-		string a = Console.ReadLine().Trim().ToLower();
-		return a == "w" || a == "y" || a == "yes" || a == "1";
+		string _userInput = Console.ReadLine().Trim().ToLower();
+		return _userInput == "w" || _userInput == "y" || _userInput == "yes" || _userInput == "1";
 	}
 
-	// Token: 0x06000024 RID: 36 RVA: 0x00004F7C File Offset: 0x0000317C
+	// Token: 0x06000025 RID: 37 RVA: 0x000050F8 File Offset: 0x000032F8
 	private static int GetDepth()
 	{
-		int num = -1;
+		int _depth = -1;
 		Console.Write("\tEnter the depth for the algorithm search (only from 1 to 6): ");
-		while (num < 1 || num > 6)
+		while (_depth < 1 || _depth > 6)
 		{
-			string s = Console.ReadLine();
+			string _userInput = Console.ReadLine();
 			Console.Clear();
-			bool flag = !int.TryParse(s, out num);
+			bool flag = !int.TryParse(_userInput, out _depth);
 			if (flag)
 			{
 				Console.Write("\tInvalid input, please try again: ");
 			}
 			else
 			{
-				bool flag2 = num < 1 || num > 6;
+				bool flag2 = _depth < 1 || _depth > 6;
 				if (flag2)
 				{
 					Console.Write("\tOut of bounds, please enter a valid number from the interval: ");
@@ -2980,15 +3039,15 @@ internal class Program
 			}
 		}
 		Console.Write("\n");
-		return num;
+		return _depth;
 	}
 
-	// Token: 0x06000025 RID: 37 RVA: 0x00005008 File Offset: 0x00003208
+	// Token: 0x06000026 RID: 38 RVA: 0x00005184 File Offset: 0x00003384
 	private static bool GetBoardDisplayType()
 	{
 		Console.Write("\n\tDisplay chess unicode pieces? (Yes/Y/1/Да = display unicode, else = numbers): ");
-		string a = Console.ReadLine().ToLower().Replace(" ", "");
-		return a == "yes" || a == "y" || a == "1" || a == "да";
+		string _userInput = Console.ReadLine().ToLower().Replace(" ", "");
+		return _userInput == "yes" || _userInput == "y" || _userInput == "1" || _userInput == "да";
 	}
 
 	// Token: 0x04000001 RID: 1
@@ -3139,23 +3198,23 @@ internal class Program
 	private class Move
 	{
 		// Token: 0x17000001 RID: 1
-		// (get) Token: 0x06000028 RID: 40 RVA: 0x0000509A File Offset: 0x0000329A
-		// (set) Token: 0x06000029 RID: 41 RVA: 0x000050A2 File Offset: 0x000032A2
+		// (get) Token: 0x06000029 RID: 41 RVA: 0x00005216 File Offset: 0x00003416
+		// (set) Token: 0x0600002A RID: 42 RVA: 0x0000521E File Offset: 0x0000341E
 		public byte From { get; set; }
 
 		// Token: 0x17000002 RID: 2
-		// (get) Token: 0x0600002A RID: 42 RVA: 0x000050AB File Offset: 0x000032AB
-		// (set) Token: 0x0600002B RID: 43 RVA: 0x000050B3 File Offset: 0x000032B3
+		// (get) Token: 0x0600002B RID: 43 RVA: 0x00005227 File Offset: 0x00003427
+		// (set) Token: 0x0600002C RID: 44 RVA: 0x0000522F File Offset: 0x0000342F
 		public byte To { get; set; }
 
 		// Token: 0x17000003 RID: 3
-		// (get) Token: 0x0600002C RID: 44 RVA: 0x000050BC File Offset: 0x000032BC
-		// (set) Token: 0x0600002D RID: 45 RVA: 0x000050C4 File Offset: 0x000032C4
+		// (get) Token: 0x0600002D RID: 45 RVA: 0x00005238 File Offset: 0x00003438
+		// (set) Token: 0x0600002E RID: 46 RVA: 0x00005240 File Offset: 0x00003440
 		public byte Piece { get; set; }
 
 		// Token: 0x17000004 RID: 4
-		// (get) Token: 0x0600002E RID: 46 RVA: 0x000050CD File Offset: 0x000032CD
-		// (set) Token: 0x0600002F RID: 47 RVA: 0x000050D5 File Offset: 0x000032D5
+		// (get) Token: 0x0600002F RID: 47 RVA: 0x00005249 File Offset: 0x00003449
+		// (set) Token: 0x06000030 RID: 48 RVA: 0x00005251 File Offset: 0x00003451
 		public byte CapturedPiece { get; set; }
 	}
 }
