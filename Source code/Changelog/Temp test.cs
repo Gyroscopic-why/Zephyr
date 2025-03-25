@@ -74,12 +74,13 @@ class Program
     private static bool whiteTurn;               // Storing the player turn
     private static bool gPieceGotEaten = false;  // Storing if the last move was a capture
     private static byte gCheckMate;              // Storing the game state
-    private static int gSkippedPositions;        // Storing the amount of skipped positions
+    private static int  gSkippedPositions;       // Storing the amount of skipped positions
 
     static void Main()
     {
+        Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta5";                       // Set the app title
+        Title = "Zephyr engine Eta6";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -103,19 +104,13 @@ class Program
             continueGame = ReadLine();             // Wait for when user is ready
 
 
-            // Prepare for the Alpha-beta search
-            int alpha = -99999;               // Min for the algorithm
-            int beta  =  99999;               // Max for the algorithm
-           
-            Stopwatch timeCounter;
-
             while (continueGame == "")
             {
                 gSkippedPositions = 0;                                // Reset the skipped positions
                 timeCounter = Stopwatch.StartNew();
                 if (gCheckMate < 3)  // If not checkmate make a move
                 {
-                    makeBestMove = AlphaBetaSearch(mainBoard, depth, alpha, beta, whiteTurn); // Start the search
+                    makeBestMove = AlphaBetaSearch(mainBoard, depth, whiteTurn); // Start the search
 
                     //Write("\tDepth: " + depth + ",\tResult: " + PositionsAmountTest(mainBoard, depth, whiteTurn) + " positions,\t\ttime elapsed: " + timeCounter.ElapsedMilliseconds + " ms");
                     //depth++;
@@ -1419,19 +1414,21 @@ class Program
     
 
 
-    private static Move AlphaBetaSearch(byte[] _board, int _depth, int _alpha, int _beta, bool _maximizingPlayer)
+    private static Move AlphaBetaSearch(byte[] _board, int _depth, bool _maximizingPlayer)
     {
         Move _bestMove = null;
+
+        int _maxEval = -999999;
+        int _minEval = 999999;
 
         List<Move> _moves = GenerateAllMoves(_board, _maximizingPlayer);
         if (_maximizingPlayer)
         {
-            int _maxEval = -999999;
             foreach (Move _move in _moves)
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
 
-                int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _beta, false);
+                int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _minEval, false);
                 if (_eval > _maxEval)
                 {
                     _maxEval = _eval;
@@ -1442,11 +1439,10 @@ class Program
         }
         else
         {
-            int _minEval = 999999;
             foreach (Move _move in _moves)
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
-                int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _minEval, true);
+                int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _minEval, true);
                 if (_eval < _minEval)
                 {
                     _minEval = _eval;
@@ -1867,3 +1863,4 @@ class Program
         return false;
     }
 }
+    
