@@ -12,13 +12,15 @@ But I am planning to grow it into a strong chess engine/bot in the future
 
 
 # Current small plans for the near future for this project:
-- UI will currently be only on english, however I will add russian UI later
 - (+) Make a board parsing function in the console
 - (+) Make an Evaluation function
 - (+) Implement a function that calculates all legitimate moves
-- Make the engine find and remember forced mate sequences
-- (+-) Implement an optimised search algorith to calculate the positions
+- (+) Implement a system for parsing user moves
+- (+) Implement an optimised search algorith to calculate the positions
 - (+) Make the engine make moves on it's own
+- UI will currently be only on english, however I will add russian UI later
+- Build a Unity interface for better visualisation and experience
+- Make the engine find and remember forced mate sequences
 - Use multithread processing to increase the engines power and time efficiency
 - Make the engine see CheckMates up to 3 full moves as of now
 
@@ -26,7 +28,7 @@ But I am planning to grow it into a strong chess engine/bot in the future
 # History and changes:
 ### Alpha: 
 - Added temporary placeholder code
-- parsing works.. yeah just works
+- first board parsing prototypes that.. works.
 
 ### Beta:
 - Constants refactoring
@@ -110,8 +112,15 @@ But I am planning to grow it into a strong chess engine/bot in the future
 - Optimised the board parsing function
 - Fixed wrong error output in the board parsing stage
 
+### Zeta++:
+- Added a pseudo-graphical interface
+- Fixed program crashes
+- Added a better info display
+- Improved optimisation
+
+
   
-# Inportant milestones :D
+# Project milestones :D
 
 ### 12.3.2025 - renaimed the project from _Gymat_ to _Zephyr_, 
 **Reason, quote:**
