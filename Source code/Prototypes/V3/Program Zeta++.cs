@@ -54,7 +54,7 @@ class Program
     private static bool whiteTurn;               // Storing the player turn
     private static bool gPieceGotEaten = false;  // Storing if the last move was a capture
     private static byte gCheckMate;              // Storing the game state
-    private static int gSkippedPositions = 0;    // Storing the amount of skipped positions
+    private static int  gSkippedPositions = 0;   // Storing the amount of skipped positions
 
     private class Move
     {
