@@ -80,7 +80,7 @@ class Program
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta6";                       // Set the app title
+        Title = "Zephyr engine Eta7";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -117,11 +117,11 @@ class Program
 
                     ApplyMove(mainBoard, makeBestMove);                // Apply the best found move
                     whiteTurn = !whiteTurn;                            // Change the player turn
-                    //Clear();                                           // Clear the console
+                    Clear();                                           // Clear the console
                 }
                 else
-                {
-                    //Clear();                                           // Clear the console
+                { 
+                    Clear();                                       // Clear the console
                     Write("\t\tCHECKMATE  :D");
                 }
 
@@ -129,7 +129,7 @@ class Program
                 if (makeBestMove != null) DisplayBoard(mainBoard, boardDisplayType, makeBestMove.From, makeBestMove.To); // Print the new board
                 else DisplayBoard(mainBoard, boardDisplayType);
 
-                eval = AdvEvaluate(mainBoard, whiteTurn, true);         // Evaluate the new position
+                eval = AdvEvaluate(mainBoard, whiteTurn, true);    // Evaluate the new position
                 Write($"\n\t\t\t\tCurrent eval: {eval}\n\n\n\t");  // Write the eval position value
 
 
@@ -137,7 +137,14 @@ class Program
                 Write("White king in check: " + IsKingInCheck(mainBoard, wkPos, true) + ", wkPos: " + wkPos);       // Print info
                 Write("\n\tBlack king in check: " + IsKingInCheck(mainBoard, bkPos, false) + ", bkPos: " + bkPos);  //
                 Write("\n\n\tContinue?  (press ENTER): ");
+
                 continueGame = ReadLine().Trim().ToLower();        // Wait for when user is ready
+
+                if (TryParseUserMove(mainBoard, continueGame))     // Check for a move input from the user
+                {
+                    whiteTurn = !whiteTurn;                        // Change the player turn
+                    continueGame = "";                             // Reset the continue game string
+                }
             }
             EncodeBoard(mainBoard);                                // Print the new board code
             if (continueGame != "exit")
@@ -1255,11 +1262,11 @@ class Program
     }
     private static List<Move> IsMoveLegalNoCheckCriteria(byte[] _board, List<Move> _moves, bool _isKingWhite)
     {
-        /*for(int i = 0; i < _moves.Count; i++)
+        for (int i = 0; i < _moves.Count; i++)
         {
             if (_moves[i].Piece == 6 || _moves[i].Piece == 14)  // The king has moved
             {
-                if (IsKingInCheck(SimulateMove(_board, _moves[i]), _moves[i].To, _isKingWhite))
+                if (IsKingInCheck(SimulateMove(_board, _moves[i]), _moves[i].To, !_isKingWhite))
                 {
                     _moves.RemoveAt(i);  // Clear the moves where the king is still in check
                     i--;                 // Decrease by one so by the end of the loop (i++) we dont hop over a move
@@ -1267,13 +1274,13 @@ class Program
             }
             else
             {
-                if (IsKingInCheck(SimulateMove(_board, _moves[i]), _isKingWhite ? wkPos : bkPos, _isKingWhite)) // The king hasnt moved
+                if (IsKingInCheck(SimulateMove(_board, _moves[i]), 64, !_isKingWhite)) // The king hasnt moved
                 {
                     _moves.RemoveAt(i);  // Clear the moves where the king is still in check
                     i--;                 // Decrease by one so by the end of the loop (i++) we dont hop over a move
                 }
             }
-        }*/
+        }
 
         return _moves;
     }
@@ -1316,8 +1323,20 @@ class Program
 
     private static bool IsKingInCheck(byte[] _board, byte _kingPos, bool _kingColor)
     {
+        if(_kingPos == 64)
+        {
+            for (int i = 0; i < 63; i++)
+            {
+                if (_kingColor && _board[i] == 6 || !_kingColor && _board[i] == 14)
+                {
+                    _kingPos = (byte)i;
+                    i += 64;
+                }
+            }
+        }
         int[] _rookOffsets = { -1, -8, 8, 1 };          // Horizontal (-1, 1) and vertical (-8, 8) moves (1st iteration)
         byte _xPos = (byte)(_kingPos % 8);              // Enemy x position
+
         for (int i = 0; i < 4; i++)
         {
             if ((i < 1 && _xPos > 0) || i == 1 || i == 2 || (i > 2 && _xPos < 7))
@@ -1331,6 +1350,8 @@ class Program
                     {
                         if ((_kingColor && (_target == 12 || _target == 13)) || (!_kingColor && (_target == 4 || _target == 5)))
                         {
+                            //Write("\n\tFrom:" + _newPosition + " to:" + _kingPos + " target:" + _target + " kingCol:" + _kingColor);
+
                             return true; // return that the king is in check
                         }
                         break;  // if a friendly piece is blocking us stop moving further
@@ -1862,5 +1883,72 @@ class Program
         if (_userInput == "yes" || _userInput == "y" || _userInput == "1" || _userInput == "да") return true;
         return false;
     }
+
+    private static bool TryParseUserMove(byte[] _board, string _userInput)
+    {
+        if (_userInput.Length == 4)
+        {
+            byte _from = 0;
+            byte _to = 0;
+
+            switch (_userInput[0])
+            {
+                case 'a':              break;
+                case 'b': _from += 1;  break;
+                case 'c': _from += 2;  break;
+                case 'd': _from += 3;  break;
+                case 'e': _from += 4;  break;
+                case 'f': _from += 5;  break;
+                case 'g': _from += 6;  break;
+                case 'h': _from += 7;  break;
+
+                default: return false;
+            }
+            switch (_userInput[1])
+            {
+                case '1': _from += 56; break;
+                case '2': _from += 48; break;
+                case '3': _from += 40; break;
+                case '4': _from += 32; break;
+                case '5': _from += 24; break;
+                case '6': _from += 16; break;
+                case '7': _from += 8;  break;
+                case '8': break;
+
+                default: return false;
+            }
+
+            switch (_userInput[2])
+            {
+                case 'a':            break;
+                case 'b': _to += 1;  break;
+                case 'c': _to += 2;  break;
+                case 'd': _to += 3;  break;
+                case 'e': _to += 4;  break;
+                case 'f': _to += 5;  break;
+                case 'g': _to += 6;  break;
+                case 'h': _to += 7;  break;
+
+                default: return false;
+            }
+            switch (_userInput[3])
+            {
+                case '1': _to += 56; break;
+                case '2': _to += 48; break;
+                case '3': _to += 40; break;
+                case '4': _to += 32; break;
+                case '5': _to += 24; break;
+                case '6': _to += 16; break;
+                case '7': _to += 8;  break;
+                case '8':            break;
+
+                default: return false;
+            }
+
+            Move _userMove = new Move { From = _from, To = _to, Piece = _board[_from], CapturedPiece = _board[_to] };
+            ApplyMove(_board, _userMove);
+            return true;
+        }
+        else return false;
+    }
 }
-    
