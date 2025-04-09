@@ -130,6 +130,9 @@ But I am planning to grow it into a strong chess engine/bot in the future
 
 ### Eta (Entire generation)
 - Fixed a wrong discartion error of legal moves
+- Fixed errors where the program would always prefer one player color to win (even if it is the opponent)
+- Fixed error where the bot would prefer stalemate
+- Fixed error with the incorect work of alpha-beta pruning because of the stalemate
 - Massive optimization compared to the Zeta generation
 - Added the ability to make your own moves (play against the computer)
 - Added finding forced moves up to 6 moves forward
@@ -138,6 +141,7 @@ But I am planning to grow it into a strong chess engine/bot in the future
 - Added field markup output for more visual and convenient calculations for moves
 - Changed the colors of the players when the board is drawn for a more understandable difference in large figures of different players
 - Added the exact output of the number of moves when a forced chemate is detected
+- Fixed forced checkmate output (x3)
 - Added correctly working game stopper when a checkmate is reached
 - Added pseudo-dynamic depth for the searching
 - Added technical output of information: the best move at the moment of each search depth
@@ -155,6 +159,7 @@ But I am planning to grow it into a strong chess engine/bot in the future
 - Included the enemy king's check on our king as an illegal move
 - Improved the move generation function
 - Code refactoring
+
 
   
 # Project milestones :D
@@ -194,14 +199,26 @@ After playing some test positions, the Eta13 version successfully detected the h
 
 
 
-## 8.4.4045 - First stable version reaches a minimum of 1500-1600 Elo (Eta13.1, Eta13.2 and V4)!
+## 8.4.4045 - First stable version reaches a minimum of 1500-1600 Elo (Eta13.1, Eta13.2 and V4.1)!
+### Update as of 10.4.2025: don't use these versions, there were a major bug found where the bot would always prefer one color player to win (even if that is the opponent), use Eta13.3, V4.2 or later
 First time the Zephyr engine actually beat some strong opponents (1000-1600 Elo bots from [Chess.com](https://chess.com))
 
 It still hadn't lost to any of them, however due to the hard communication in using it as of now
 
 I have only played it a few times against 1000-1600 Elo opponents. 
 
-Worst case scenario - the game ends in a draw, so Zephyr's Elo is probably a bit higher than 1600
+Worst case scenario - the game ends in a draw, so Zephyr's V4.1 Elo is probably than 1400
+
+
+## 10.4.2025 - Fixed a few major bugs of previous version, now V4.2 achieved 1600-1700 Elo (Eta13.3, and V4.2)
+Fixed a few major bugs in previous version, now the engine is more stable, strong, and identifies checkmates way better
+
+It almost destroyed the 1500 Elo bots on [Chess.com](https://chess.com)), and ranked at least 1600-1700 Elo
+
+Zephyr V4.2 has a big potential to have an even higher rank, if the preparations are done correctly
+
 
 
 # More comming soon :)
+
+
