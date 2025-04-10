@@ -74,7 +74,7 @@ class Program
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine V4";                             //  Set the app title
+        Title = "Zephyr engine V4.1";                             //  Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
