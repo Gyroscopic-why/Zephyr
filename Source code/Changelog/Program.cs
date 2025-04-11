@@ -79,7 +79,7 @@ class Program
     static void Main()
     {
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta4";                       // Set the app title
+        Title = "Zephyr engine Eta5";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -104,13 +104,14 @@ class Program
 
 
             // Prepare for the Alpha-beta search
-            int alpha = int.MinValue;              // Min for the algorithm
-            int beta = int.MaxValue;               // Max for the algorithm
+            int alpha = -99999;               // Min for the algorithm
+            int beta  =  99999;               // Max for the algorithm
            
             Stopwatch timeCounter;
 
             while (continueGame == "")
             {
+                gSkippedPositions = 0;                                // Reset the skipped positions
                 timeCounter = Stopwatch.StartNew();
                 if (gCheckMate < 3)  // If not checkmate make a move
                 {
@@ -121,11 +122,11 @@ class Program
 
                     ApplyMove(mainBoard, makeBestMove);                // Apply the best found move
                     whiteTurn = !whiteTurn;                            // Change the player turn
-                    Clear();                                           // Clear the console
+                    //Clear();                                           // Clear the console
                 }
                 else
                 {
-                    Clear();                                           // Clear the console
+                    //Clear();                                           // Clear the console
                     Write("\t\tCHECKMATE  :D");
                 }
 
@@ -133,7 +134,7 @@ class Program
                 if (makeBestMove != null) DisplayBoard(mainBoard, boardDisplayType, makeBestMove.From, makeBestMove.To); // Print the new board
                 else DisplayBoard(mainBoard, boardDisplayType);
 
-                eval = AdvEvaluate(mainBoard, true, true);         // Evaluate the new position
+                eval = AdvEvaluate(mainBoard, whiteTurn, true);         // Evaluate the new position
                 Write($"\n\t\t\t\tCurrent eval: {eval}\n\n\n\t");  // Write the eval position value
 
 
@@ -565,26 +566,6 @@ class Program
         Write("\n\tCustom fen board code: " + _boardFen + "\n\n\n");
     }
 
-    /*private static int  Evaluate(byte[] _board, bool _printInfo)
-    {
-        // 1. Material balance calculation
-        int _material = CalculateMaterial(_board);
-
-        // 2. Position balance calculation
-        int _position = CalculateCenterControl(_board);
-
-        // 3. King safety 
-        int _kingSafety = CalculateKingSafety(_board);
-
-        // 4. Pawn structure
-        int _pawnStructure = CalculatePawnStructure(_board);
-
-        // Toral score formula
-        int totalScore = _material + _position + _kingSafety + _pawnStructure;
-
-        if(_printInfo) Write("\n\tMaterial: " + _material + " + Position: " + _position + " + King safety: " + _kingSafety + " + Pawn structure: " + _pawnStructure);
-        return totalScore; // Positive score = good for white, negative = good for black
-    } // Board evaluation (its OK, but it should definitely be better in the future)*/
 
     private static int  AdvEvaluate(byte[] _board, bool _isWhite, bool _writeInfo = false)
     {
@@ -620,14 +601,14 @@ class Program
         -25, -10, -10, -10, -10, -10, -10, -25
     };              //
         int[] STARTrookTable = {
-          0,   0,   0,   0,   0,   0,   0,   0,
-         10,  20,  20,  20,  20,  20,  20,  10,
-        -10,   0,   0,   0,   0,   0,   0, -10,
-        -10,   0,   0,   0,   0,   0,   0, -10,
-        -10,   0,   0,   0,   0,   0,   0, -10,
-        -10,   0,   0,   0,   0,   0,   0, -10,
-        -10,   0,   0,   0,   0,   0,   0, -10,
-          0,   0,   0,  10,  10,   0,   0,   0
+          0,    0,    0,   0,   0,    0,    0,   0,
+         10,   20,   20,  20,  20,   20,   20,  10,
+        -10,    0,    0,   0,   0,    0,    0, -10,
+        -10,    0,    0,   0,   0,    0,    0, -10,
+        -10,    0,    0,   0,   0,    0,    0, -10,
+        -10,    0,    0,   0,   0,    0,    0, -10,
+        -10,    0,    0,   0,   0,    0,    0, -10,
+          0,  -10,  -10,  10,  10,  -10,  -10,   0
     };                //
         int[] STARTqueenTable = {
         -20, -10, -10,  -5,  -5, -10, -10, -20,
@@ -645,9 +626,9 @@ class Program
         -30, -40, -40, -50, -50, -40, -40, -30,
         -30, -40, -40, -50, -50, -40, -40, -30,
         -20, -30, -30, -40, -40, -30, -30, -20,
-        -10, -20, -20, -20, -20, -20, -20, -10,
-         20,  20,   0,   0,   0,   0,  20,  20,
-         20,  30,  10,   0,   0,  10,  30,  20
+        -20, -25, -20, -20, -20, -20, -25, -20,
+         20,  20,  -5, -10, -10,  -5,  20,  20,
+         20,  30,  10,  -1,  -1,  10,  30,  20
     };                //
         //----------------------------------------//
 
@@ -919,20 +900,20 @@ class Program
                     switch(_piece)
                     {
                         case 4:
-                            _totalBonus += _isWhite ? rookOpenFileBonus : -rookOpenFileBonus;
+                            _totalBonus += rookOpenFileBonus;
                             _hasPawn = true; // Reusing an old variable to stop the punishment
                             break;
                         case 5:
-                            _totalBonus += _isWhite ? queenOpenFileBonus : -queenOpenFileBonus;
+                            _totalBonus += queenOpenFileBonus;
                             _hasPawn = true; // Reusing an old variable to stop the punishment
                             break;
 
                         case 12:
-                            _totalBonus += _isWhite ? -rookOpenFileBonus : rookOpenFileBonus;
+                            _totalBonus -= rookOpenFileBonus;
                             _hasPawn = true; // Reusing an old variable to stop the punishment
                             break;
                         case 13:
-                            _totalBonus += _isWhite ? -queenOpenFileBonus : queenOpenFileBonus;
+                            _totalBonus -= queenOpenFileBonus;
                             _hasPawn = true; // Reusing an old variable to stop the punishment
                             break;
                     }
@@ -1125,7 +1106,7 @@ class Program
         }
         return true;
     }
-    private static bool CanAttack(byte[] _board, byte _enemy, byte _fromX, byte _fromY, byte _toX, byte _toY)
+    /*private static bool CanAttack(byte[] _board, byte _enemy, byte _fromX, byte _fromY, byte _toX, byte _toY)
     {
         int _distX = Math.Abs(_toX - _fromX);      // Important to note that I store the abs value
         int _distY = Math.Abs(_toY - _fromY);      // to reduce the checks needed for the piece attacks (since they are simetrical)
@@ -1173,7 +1154,7 @@ class Program
                 
         }
         return false; // Piece attack logic, true if our square can be attacked, false if it cant
-    }
+    }*/
 
     private static bool CheckForDiagonalBlocking(byte[] _board, byte _fromX, byte _fromY, byte _toX, byte _toY)
     {
@@ -1279,7 +1260,7 @@ class Program
     }
     private static List<Move> IsMoveLegalNoCheckCriteria(byte[] _board, List<Move> _moves, bool _isKingWhite)
     {
-        for(int i = 0; i < _moves.Count; i++)
+        /*for(int i = 0; i < _moves.Count; i++)
         {
             if (_moves[i].Piece == 6 || _moves[i].Piece == 14)  // The king has moved
             {
@@ -1297,7 +1278,7 @@ class Program
                     i--;                 // Decrease by one so by the end of the loop (i++) we dont hop over a move
                 }
             }
-        }
+        }*/
 
         return _moves;
     }
@@ -1450,13 +1431,12 @@ class Program
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
 
-                int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _beta, false);
+                int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _beta, false);
                 if (_eval > _maxEval)
                 {
                     _maxEval = _eval;
                     _bestMove = _move;
                 }
-                _alpha = Math.Max(_alpha, _eval);
             }
             return _bestMove;
         }
@@ -1466,63 +1446,59 @@ class Program
             foreach (Move _move in _moves)
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
-                int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _beta, true);
+                int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _minEval, true);
                 if (_eval < _minEval)
                 {
                     _minEval = _eval;
                     _bestMove = _move;
                 }
-                _beta = Math.Min(_beta, _eval);
             }
             return _bestMove;
         }
     }
     private static int  AlphaBetaEvalSearch(byte[] _board, int _depth, int _alpha, int _beta, bool _maximizingPlayer)
     {
-        if (_depth == 0)  // return eval result after the search ended
-            return AdvEvaluate(_board, false);
+        if (_depth < 1)  // return eval result after the search ended
+            return AdvEvaluate(_board, _maximizingPlayer);
+        
 
         List<Move> _moves = GenerateAllMoves(_board, _maximizingPlayer);
         if (_maximizingPlayer)
         {
-            int _maxEval = -999999;
             foreach (Move _move in _moves)
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
 
                 int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _beta, false);
-                if (_eval > _maxEval)
+                if (_eval > _alpha)
                 {
-                    _maxEval = _eval;
+                    _alpha = _eval;  // Set new max eval
                 }
-                _alpha = Math.Max(_alpha, _eval);
                 if (_beta <= _alpha)
                 {
                     gSkippedPositions++;
-                    return _maxEval;
+                    return _alpha;
                 }
             }
-            return _maxEval;
+            return _alpha;
         }
         else
         {
-            int _minEval = 999999;
             foreach (Move _move in _moves)
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
                 int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _beta, true);
-                if (_eval < _minEval)
+                if (_eval < _beta)
                 {
-                    _minEval = _eval;
+                    _beta = _eval;
                 }
-                _beta = Math.Min(_beta, _eval);
                 if (_beta <= _alpha)
                 {
                     gSkippedPositions++;
-                    return _minEval;
+                    return _beta;
                 }
             }
-            return _minEval;
+            return _beta;
         }
     }
 
