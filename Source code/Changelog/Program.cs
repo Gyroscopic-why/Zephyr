@@ -49,7 +49,7 @@ class Program
     private const int bVal = 321;    // Bishop value
     private const int rVal = 500;    // Rook   value
     private const int qVal = 915;    // Queen  value
-    private const int kVal = 10000;  // King val
+    private const int kVal = 100000;  // King val
 
     // Additional factors for evaluating the position  //
     private const int rookOpenFileBonus         = 30    ;
@@ -60,7 +60,7 @@ class Program
     private const int enemyInCheckPriority      = 150   ;
     private const int piecePositionPriority     = 1     ;
     private const int losingPlayerInCorner      = 50    ;
-    private const int kingAggressionInEndgame   = 200    ;
+    private const int kingAggressionInEndgame   = 20    ;
     private const int kingSafetyPriority        = 40    ;
     private const int pieceActivityPriority     = 5     ;
     private const int pawnStructurePriority     = 15    ;
@@ -77,11 +77,11 @@ class Program
 
     //  0         = normal game
     //
-    //  1  -  8   = checkmate for white in 1-8 moves
-    //  -1 - -8   = checkmate for black in 1-8 moves
+    //   2 -  8   = checkmate for white in 1-7 moves
+    //  -2 - -8   = checkmate for black in 1-7 moves
     //
-    //   128      = black won the game
-    //  -128      = whitte won the game
+    //   1        = black won the game
+    //  -1        = white won the game
     //
     //   127      = stalemate for white (draw)
     //  -127      = stalemate for black (draw)
@@ -99,7 +99,7 @@ class Program
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta.11";                       // Set the app title
+        Title = "Zephyr engine Eta.12";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -128,9 +128,10 @@ class Program
                 gSkippedPositions = 0;                                // Reset the skipped positions
                 gEvaluatedPositions = 0;                              // Reset the evaluated positions
                 timeCounter = Stopwatch.StartNew();
-                if (Math.Abs(gBoardState) < 10)                       // If the game hasnt ended yet
+                if (Math.Abs(gBoardState) != 1)                       // If the game hasnt ended yet
                 {
-                    for (int i = 1; i <= depth; i++)
+                    //gBoardState = 0;                                  // Reset board state for the loop
+                    for (int i = 1; i <= depth && gBoardState != 1; i++)
                     {
                         makeBestMove = AlphaBetaSearch(mainBoard, i, whiteTurn);          // Start the search
                         Write("\n\t\tTotal evaluated position: " + gEvaluatedPositions);  // Print the amount of evaluated positions
@@ -144,10 +145,14 @@ class Program
                     whiteTurn = !whiteTurn;                            // Change the player turn
                     Clear();                                           // Clear the console
                 }
-                else
-                { 
-                    Clear();                                       // Clear the console
-                    Write("\t\tCHECKMATE  :D");
+                if(gBoardState != 0)
+                {
+                    Clear();
+                    if (gBoardState == 1)        Write("\t\tCHECKMATE!  Black has won the game.");
+                    else if (gBoardState == -1)  Write("\t\tCHECKMATE!  White has won the game.");
+                    else Write("\t\tFound mate in: " + (Math.Abs(gBoardState) - 1) + " moves.");
+
+                    //  Add draw logic in the future
                 }
 
                 timeCounter.Stop();
@@ -871,12 +876,12 @@ class Program
             //  Add bonus for the king assisting in the enemy checkmate
             if (_whiteMajorPieces > _blackMajorPieces)
             {
-                _endGameKingAssistVal += Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
+                _endGameKingAssistVal -= Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
                 _endGameKingAssistVal *= kingAggressionInEndgame;
             }
             else
             {
-                _endGameKingAssistVal -= Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
+                _endGameKingAssistVal += Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
                 _endGameKingAssistVal *= kingAggressionInEndgame;
             }
         }
@@ -1580,7 +1585,14 @@ class Program
                     _bestMove = _move;
                 }
             }
-            Write("\n\t\tEval: " + _maxEval);
+            //Write("\n\t\tMAX Eval: " + _maxEval);
+            if (_maxEval > 9999 || _maxEval < -9999)
+            {
+                //  Update "found mate in" text with new info
+                //Write("\nCcH: " + _depth + " to state: " + gBoardState);
+                if (gBoardState == 0 || _depth <= Math.Abs(gBoardState)) gBoardState = (sbyte)(_depth);
+            }
+            //Write("  State: " + gBoardState);
             return _bestMove;
         }
         else
@@ -1595,7 +1607,14 @@ class Program
                     _bestMove = _move;
                 }
             }
-            Write("\n\t\tEval: " + _minEval);
+            //Write("\n\t\tMIN Eval: " + _minEval);
+            if (_minEval < -9999 || _minEval > 9999)
+            {
+                //  Update "found mate in" text with new info K1k22q38
+                //Write("\nCcH: " + _depth + " to state: " + gBoardState);
+                if (gBoardState == 0 || _depth <= Math.Abs(gBoardState)) gBoardState = (sbyte)-(_depth);
+            }
+            //Write("  State: " + gBoardState);
             return _bestMove;
         }
     }
@@ -1652,17 +1671,15 @@ class Program
         }
         else
         {
-            gEvaluatedPositions++;
-            //return AdvEvaluate(_board, _maximizingPlayer);
             if (_maximizingPlayer)
             {
                 if (IsKingInCheck(_board, bkPos, false)) return 999999;
-                else return Math.Max(-999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, false));
+                else return Math.Max(-999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, true));
             }
             else
             {
                 if (IsKingInCheck(_board, wkPos, true)) return -999999;
-                else return Math.Min(999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, true));
+                else return Math.Min(999999,  AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, false));
             }
         }
     }
