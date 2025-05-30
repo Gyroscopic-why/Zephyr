@@ -61,8 +61,8 @@ class Program
     private const int piecePositionPriority     = 1     ;
     private const int losingPlayerInCorner      = 50    ;
     private const int kingAggressionInEndgame   = 20    ;
-    //private const int kingSafetyPriority        = 40    ;
-    //private const int pieceActivityPriority     = 5     ;
+    //private const int kingSafetyPriority      = 40    ;
+    //private const int pieceActivityPriority   = 5     ;
     private const int pawnStructurePriority     = 15    ;
     //-------------------------------------------------//
 
@@ -99,7 +99,7 @@ class Program
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta.13.0";                       // Set the app title
+        Title = "Zephyr engine Eta.13.1";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -150,7 +150,7 @@ class Program
                     Clear();
                     if (gBoardState == 1)        Write("\t\tCHECKMATE!  Black has won the game.");
                     else if (gBoardState == -1)  Write("\t\tCHECKMATE!  White has won the game.");
-                    else Write("\t\tFound mate in: " + (Math.Abs(gBoardState) - 1) + " moves.");
+                    else Write("\t\tFound mate in: " + (Math.Abs(gBoardState) - 3) + " moves.");
 
                     //  Add draw logic in the future
                 }
@@ -1584,7 +1584,7 @@ class Program
                 byte[] _newBoard = SimulateMove(_board, _move);
 
                 int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _minEval, false);
-                Write("\nCur eval: " + _eval);
+                //Write("\nCur eval: " + _eval);
                 if (_eval > _maxEval)
                 {
                     _maxEval = _eval;
@@ -1607,7 +1607,7 @@ class Program
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
                 int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _minEval, true);
-                Write("\nCur eval: " + _eval);
+                //Write("\nCur eval: " + _eval);
                 if (_eval < _minEval)
                 {
                     _minEval = _eval;
