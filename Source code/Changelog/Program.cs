@@ -59,8 +59,8 @@ class Program
     private const int centerControlPriority     = 1     ;
     private const int enemyInCheckPriority      = 150   ;
     private const int piecePositionPriority     = 1     ;
-    private const int enemyInCornerPriority     = 50    ;
-    private const int kingAggressionInEndgame   = 20    ;
+    private const int losingPlayerInCorner      = 50    ;
+    private const int kingAggressionInEndgame   = 200    ;
     private const int kingSafetyPriority        = 40    ;
     private const int pieceActivityPriority     = 5     ;
     private const int pawnStructurePriority     = 15    ;
@@ -99,7 +99,7 @@ class Program
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta.10";                       // Set the app title
+        Title = "Zephyr engine Eta.11";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -864,19 +864,19 @@ class Program
             }    // Count the positional value for each piece on the board
 
             //  Add bonus for enemy king in corner
-            if (_isWhite) _positionalVal += ENDkingTable[bkPos] * enemyInCornerPriority;
-            else     _positionalVal -= ENDkingTable[wkPos] * enemyInCornerPriority;
+            if (_isWhite) _positionalVal += ENDkingTable[bkPos] * losingPlayerInCorner;
+            else          _positionalVal -= ENDkingTable[wkPos] * losingPlayerInCorner;
 
 
             //  Add bonus for the king assisting in the enemy checkmate
             if (_whiteMajorPieces > _blackMajorPieces)
             {
-                _endGameKingAssistVal -= Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
+                _endGameKingAssistVal += Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
                 _endGameKingAssistVal *= kingAggressionInEndgame;
             }
             else
             {
-                _endGameKingAssistVal += Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
+                _endGameKingAssistVal -= Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
                 _endGameKingAssistVal *= kingAggressionInEndgame;
             }
         }
@@ -1657,14 +1657,13 @@ class Program
             if (_maximizingPlayer)
             {
                 if (IsKingInCheck(_board, bkPos, false)) return 999999;
-                else return Math.Max(-999999, AdvEvaluate(_board, true));
+                else return Math.Max(-999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, false));
             }
             else
             {
                 if (IsKingInCheck(_board, wkPos, true)) return -999999;
-                else return Math.Min(999999, AdvEvaluate(_board, true)); ;
+                else return Math.Min(999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, true));
             }
-            //return _maximizingPlayer ? -99999 : 99999;
         }
     }
 
