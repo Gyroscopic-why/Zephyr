@@ -57,12 +57,12 @@ class Program
     private const int openFileNotUsedPunishment = -5    ;
     ////                                                /
     private const int centerControlPriority     = 1     ;
-    private const int enemyInCheckPriority      = 150   ;
+    private const int enemyInCheckPriority      = 250   ;
     private const int piecePositionPriority     = 1     ;
     private const int losingPlayerInCorner      = 50    ;
     private const int kingAggressionInEndgame   = 20    ;
-    private const int kingSafetyPriority        = 40    ;
-    private const int pieceActivityPriority     = 5     ;
+    //private const int kingSafetyPriority        = 40    ;
+    //private const int pieceActivityPriority     = 5     ;
     private const int pawnStructurePriority     = 15    ;
     //-------------------------------------------------//
 
@@ -99,7 +99,7 @@ class Program
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta.12";                       // Set the app title
+        Title = "Zephyr engine Eta.13.0";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -130,7 +130,7 @@ class Program
                 timeCounter = Stopwatch.StartNew();
                 if (Math.Abs(gBoardState) != 1)                       // If the game hasnt ended yet
                 {
-                    //gBoardState = 0;                                  // Reset board state for the loop
+                    gBoardState = 0;                                  // Reset board state for the loop
                     for (int i = 1; i <= depth && gBoardState != 1; i++)
                     {
                         makeBestMove = AlphaBetaSearch(mainBoard, i, whiteTurn);          // Start the search
@@ -869,8 +869,7 @@ class Program
             }    // Count the positional value for each piece on the board
 
             //  Add bonus for enemy king in corner
-            if (_isWhite) _positionalVal += ENDkingTable[bkPos] * losingPlayerInCorner;
-            else          _positionalVal -= ENDkingTable[wkPos] * losingPlayerInCorner;
+            
 
 
             //  Add bonus for the king assisting in the enemy checkmate
@@ -878,11 +877,17 @@ class Program
             {
                 _endGameKingAssistVal -= Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
                 _endGameKingAssistVal *= kingAggressionInEndgame;
+
+                if (_isWhite) _positionalVal += ENDkingTable[bkPos] * losingPlayerInCorner;
+                else _positionalVal          -= ENDkingTable[bkPos] * losingPlayerInCorner;
             }
             else
             {
                 _endGameKingAssistVal += Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
                 _endGameKingAssistVal *= kingAggressionInEndgame;
+
+                if (_isWhite) _positionalVal -= ENDkingTable[wkPos] * losingPlayerInCorner;
+                else _positionalVal          += ENDkingTable[wkPos] * losingPlayerInCorner;
             }
         }
 
@@ -1579,6 +1584,7 @@ class Program
                 byte[] _newBoard = SimulateMove(_board, _move);
 
                 int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _minEval, false);
+                Write("\nCur eval: " + _eval);
                 if (_eval > _maxEval)
                 {
                     _maxEval = _eval;
@@ -1601,6 +1607,7 @@ class Program
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
                 int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _minEval, true);
+                Write("\nCur eval: " + _eval);
                 if (_eval < _minEval)
                 {
                     _minEval = _eval;
@@ -1629,15 +1636,16 @@ class Program
 
         List<Move> _moves = GenerateAllMoves(_board, _maximizingPlayer);
 
-        if (_moves.Count > 1)
+        if (_moves.Count > 0)
         {
             if (_maximizingPlayer)
             {
                 foreach (Move _move in _moves)
                 {
                     byte[] _newBoard = SimulateMove(_board, _move);
-
                     int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _beta, false);
+
+                    //Write("\n\t\tTry move from: " + _move.From + " to: " + _move.To + ", calc eval: " + _eval);
                     if (_eval > _alpha)
                     {
                         _alpha = _eval;  // Set new max eval
@@ -1656,6 +1664,8 @@ class Program
                 {
                     byte[] _newBoard = SimulateMove(_board, _move);
                     int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _beta, true);
+
+                    //Write("\n\t\tTry move from: " + _move.From + " to: " + _move.To + ", calc eval: " + _eval);
                     if (_eval < _beta)
                     {
                         _beta = _eval;
@@ -1674,12 +1684,12 @@ class Program
             if (_maximizingPlayer)
             {
                 if (IsKingInCheck(_board, bkPos, false)) return 999999;
-                else return Math.Max(-999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, true));
+                else return Math.Max(-999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, false));
             }
             else
             {
                 if (IsKingInCheck(_board, wkPos, true)) return -999999;
-                else return Math.Min(999999,  AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, false));
+                else return Math.Min(999999,  AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, true));
             }
         }
     }
