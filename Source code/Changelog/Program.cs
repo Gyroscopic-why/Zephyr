@@ -59,6 +59,8 @@ class Program
     private const int centerControlPriority     = 1     ;
     private const int enemyInCheckPriority      = 150   ;
     private const int piecePositionPriority     = 1     ;
+    private const int enemyInCornerPriority     = 50    ;
+    private const int kingAggressionInEndgame   = 20    ;
     private const int kingSafetyPriority        = 40    ;
     private const int pieceActivityPriority     = 5     ;
     private const int pawnStructurePriority     = 15    ;
@@ -97,7 +99,7 @@ class Program
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta9";                       // Set the app title
+        Title = "Zephyr engine Eta.10";                       // Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -133,12 +135,12 @@ class Program
                         makeBestMove = AlphaBetaSearch(mainBoard, i, whiteTurn);          // Start the search
                         Write("\n\t\tTotal evaluated position: " + gEvaluatedPositions);  // Print the amount of evaluated positions
                         if(makeBestMove != null) Write("\n\t\tDepth: " + i + ", move from : " + makeBestMove.From + ", move to: " + makeBestMove.To);
-
+                        //Write("\n\t\tPos eval: " + AdvEvaluate(SimulateMove(mainBoard, makeBestMove), whiteTurn, false));    // Evaluate the new position)
                         //Write("\tDepth: " + depth + ",\tResult: " + PositionsAmountTest(mainBoard, depth, whiteTurn) + " positions,\t\ttime elapsed: " + timeCounter.ElapsedMilliseconds + " ms");
                         //depth++;
                     }
-                    ApplyMove(mainBoard, makeBestMove);                // Apply the best found move
                     ReadKey();
+                    ApplyMove(mainBoard, makeBestMove);                // Apply the best found move
                     whiteTurn = !whiteTurn;                            // Change the player turn
                     Clear();                                           // Clear the console
                 }
@@ -709,14 +711,14 @@ class Program
         -20, -10, -10,  -5,  -5, -10, -10, -20
     };               //
         int[] ENDkingTable = {
-        -50, -30, -10,  -5,  -5, -10, -30, -50,
-        -30, -10,  -3,  -2,  -2,  -3, -10, -30,
-        -10,  -3,  -2,  -1,  -1,  -2,  -3, -10,
-         -5,  -2,  -1,   0,   0,  -1,  -2,  -5,
-         -5,  -2,  -1,   0,   0,  -1,  -2,  -5,
-        -10,  -3,  -2,  -1,  -1,  -2,  -3, -10,
-        -30, -10,  -3,  -2,  -2,  -3, -10, -30,
-        -50, -30, -10,  -5,  -5, -10, -30, -50
+        -10, -6, -5, -4, -4, -5, -6, -10,
+         -6, -4, -3, -2, -2, -3, -4,  -6,
+         -5, -3, -2, -1, -1, -2, -3,  -5,
+         -4, -2, -1,  0,  0, -1, -2,  -4,
+         -4, -2, -1,  0,  0, -1, -2,  -4,
+         -5, -3, -2, -1, -1, -2, -3,  -5,
+         -6, -4, -3, -2, -2, -3, -4,  -6,
+        -10, -6, -5, -4, -4, -5, -6,  -10
     };                //
         //--------------------------------------//
 
@@ -726,6 +728,14 @@ class Program
 
         int _positionalVal = 0;  // Positional value will be stored here
         int _enemyInCheckVal = 0;
+
+        // Enemy king helps attack
+        //
+        // We punish the player in the endgame if:
+        // He is winning
+        // His king doesnt help to checkmate his opponent
+        int _endGameKingAssistVal = 0;
+
 
         if (Math.Max(_whiteMajorPieces, _blackMajorPieces) > 1700)  // Calculate position values for start and middle game
         {
@@ -852,6 +862,23 @@ class Program
                 }
                 _positionalVal *= piecePositionPriority;
             }    // Count the positional value for each piece on the board
+
+            //  Add bonus for enemy king in corner
+            if (_isWhite) _positionalVal += ENDkingTable[bkPos] * enemyInCornerPriority;
+            else     _positionalVal -= ENDkingTable[wkPos] * enemyInCornerPriority;
+
+
+            //  Add bonus for the king assisting in the enemy checkmate
+            if (_whiteMajorPieces > _blackMajorPieces)
+            {
+                _endGameKingAssistVal -= Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
+                _endGameKingAssistVal *= kingAggressionInEndgame;
+            }
+            else
+            {
+                _endGameKingAssistVal += Math.Abs(wkPos / 8 - bkPos / 8) + Math.Abs(wkPos % 8 - bkPos % 8);
+                _endGameKingAssistVal *= kingAggressionInEndgame;
+            }
         }
 
         if (_isWhite) if (IsKingInCheck(_board, bkPos, false)) _enemyInCheckVal += enemyInCheckPriority;  
@@ -863,6 +890,7 @@ class Program
 
         // Add capture bonus (plans for later)
         //evaluation += CalculateCaptureBonus(_board, _isWhite);
+
 
         // King safety bonus (simplified)
         int _kingSafetyVal = /*CalculateKingSafety(_board);*/ 0;
@@ -880,7 +908,8 @@ class Program
         // CALCULATE FINAL EVALUATION
         int _evaluation = 
             _materialVal + 
-            _positionalVal + 
+            _positionalVal +
+            _endGameKingAssistVal +
             _openFileVal + 
             _centerControlVal +
             _pawnStructureVal +
@@ -888,8 +917,8 @@ class Program
 
         if (_writeInfo)  // Write extra info
         {
-            Write("Material: " + _materialVal + " + positional: " + _positionalVal + " + open file: " + _openFileVal);
-            Write("\n\t\t\t+ king safety: " + _kingSafetyVal + " + enemy in check: " + _enemyInCheckVal + " +\n\t\t\t");
+            Write("Material: " + _materialVal + " + positional: " + _positionalVal + " + eg king assist: " + _endGameKingAssistVal);
+            Write("\n\t\t\t + open file: " + _openFileVal + " + king safety: " + _kingSafetyVal + " + enemy in check: " + _enemyInCheckVal + " +\n\t\t\t");
             Write("center control: " + _centerControlVal + " + pawn structure: " + _pawnStructureVal);
         }
 
@@ -1551,6 +1580,7 @@ class Program
                     _bestMove = _move;
                 }
             }
+            Write("\n\t\tEval: " + _maxEval);
             return _bestMove;
         }
         else
@@ -1565,6 +1595,7 @@ class Program
                     _bestMove = _move;
                 }
             }
+            Write("\n\t\tEval: " + _minEval);
             return _bestMove;
         }
     }
@@ -1581,8 +1612,6 @@ class Program
 
         if (_moves.Count > 1)
         {
-
-
             if (_maximizingPlayer)
             {
                 foreach (Move _move in _moves)
@@ -1623,7 +1652,19 @@ class Program
         }
         else
         {
-            return _maximizingPlayer ? -999999 : 999999;
+            gEvaluatedPositions++;
+            //return AdvEvaluate(_board, _maximizingPlayer);
+            if (_maximizingPlayer)
+            {
+                if (IsKingInCheck(_board, bkPos, false)) return 999999;
+                else return Math.Max(-999999, AdvEvaluate(_board, true));
+            }
+            else
+            {
+                if (IsKingInCheck(_board, wkPos, true)) return -999999;
+                else return Math.Min(999999, AdvEvaluate(_board, true)); ;
+            }
+            //return _maximizingPlayer ? -99999 : 99999;
         }
     }
 
