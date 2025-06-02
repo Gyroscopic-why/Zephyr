@@ -61,8 +61,8 @@ class Program
     private const int piecePositionPriority     = 1     ;
     private const int losingPlayerInCorner      = 50    ;
     private const int kingAggressionInEndgame   = 20    ;
-    //private const int kingSafetyPriority      = 40    ;
-    //private const int pieceActivityPriority   = 5     ;
+    private const int kingSafetyPriority        = 40    ;
+    private const int pieceActivityPriority     = 5     ;
     private const int pawnStructurePriority     = 15    ;
     //-------------------------------------------------//
 
@@ -70,10 +70,10 @@ class Program
     // 32byte optimised board and 64 classic board are stored here
     readonly private static byte[] /*optimisedBoard = new byte[32],*/ mainBoard = new byte[64];
 
-    private static byte wkPos;                   // White king position
-    private static byte bkPos;                   // Black king position
-    private static bool whiteTurn;               // Storing the player turn
-    private static bool gPieceGotEaten = false;  // Storing if the last move was a capture
+    private static byte wkPos;                   //  White king position
+    private static byte bkPos;                   //  Black king position
+    private static bool whiteTurn;               //  Storing the player turn
+    private static bool gPieceGotEaten = false;  //  Storing if the last move was a capture
 
     //  0         = normal game
     //
@@ -90,51 +90,51 @@ class Program
     //  -126      = draw by repetition
     //
     //   125      = draw by 50 rule
-    private static sbyte gBoardState;        // Storing the game state
+    private static sbyte gBoardState;        //  Storing the game state
 
-    private static int  gSkippedPositions;       // Storing the amount of skipped positions
-    private static int  gEvaluatedPositions;     // Storing the amount of evaluated positions
+    private static int  gSkippedPositions;       //  Storing the amount of skipped positions
+    private static int  gEvaluatedPositions;     //  Storing the amount of evaluated positions
 
     static void Main()
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta.13.1";                       // Set the app title
+        Title = "Zephyr engine Eta.13.2";                       //  Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
         while (continueGame != "exit")
         {
-            gBoardState = 0;                                 // Reset game
-            int depth = GetDepth();                         // Get the depth for the alpha-beta search
-            bool boardDisplayType = GetBoardDisplayType();  // Set the board display type
-            GetEncodedBoard(false);                         // Get the board position (classic storing)
-            whiteTurn = GetTurn();                          // Ask whose turn it is (true = white)
+            gBoardState = 0;                                    //  Reset game
+            int depth = GetDepth();                             //  Get the depth for the alpha-beta search
+            bool boardDisplayType = GetBoardDisplayType();      //  Set the board display type
+            GetEncodedBoard(false);                             //  Get the board position (classic storing)
+            whiteTurn = GetTurn();                              //  Ask whose turn it is (true = white)
 
-            Clear();                                        // Clear the console
-            DisplayBoard(mainBoard, boardDisplayType);      // Print the board position
+            Clear();                                            //  Clear the console
+            DisplayBoard(mainBoard, boardDisplayType);          //  Print the board position
 
-            int eval = AdvEvaluate(mainBoard, true, true);  // Evaluate the start board position
-            Write($"\n\t\t\t\tCurrent eval: {eval}\n\n\n\t");   // Write the start board position eval result
+            int eval = AdvEvaluate(mainBoard, true, true);      //  Evaluate the start board position
+            Write($"\n\t\t\t\tCurrent eval: {eval}\n\n\n\t");   //  Write the start board position eval result
             Write("White king in check: " + IsKingInCheck(mainBoard, wkPos, true) + ", wkPos: " + wkPos);       // Print info
             Write("\n\tBlack king in check: " + IsKingInCheck(mainBoard, bkPos, false) + ", bkPos: " + bkPos);  //
-            Write("\n\n\tContinue?  (press ENTER): ");
+            Write("\n\n\tBegin game?  (press ENTER): ");
 
-            continueGame = ReadLine();             // Wait for when user is ready
+            continueGame = ReadLine();                          //  Wait for when user is ready
 
 
             while (continueGame == "")
             {
-                gSkippedPositions = 0;                                // Reset the skipped positions
-                gEvaluatedPositions = 0;                              // Reset the evaluated positions
+                gSkippedPositions = 0;                                //  Reset the skipped positions
+                gEvaluatedPositions = 0;                              //  Reset the evaluated positions
                 timeCounter = Stopwatch.StartNew();
-                if (Math.Abs(gBoardState) != 1)                       // If the game hasnt ended yet
+                if (Math.Abs(gBoardState) != 1)                       //  If the game hasnt ended yet
                 {
-                    gBoardState = 0;                                  // Reset board state for the loop
+                    gBoardState = 0;                                  //  Reset board state for the loop
                     for (int i = 1; i <= depth && gBoardState != 1; i++)
                     {
-                        makeBestMove = AlphaBetaSearch(mainBoard, i, whiteTurn);          // Start the search
-                        Write("\n\t\tTotal evaluated position: " + gEvaluatedPositions);  // Print the amount of evaluated positions
+                        makeBestMove = AlphaBetaSearch(mainBoard, i, whiteTurn);          //  Start the search
+                        Write("\n\t\tTotal evaluated position: " + gEvaluatedPositions);  //  Print the amount of evaluated positions
                         if(makeBestMove != null) Write("\n\t\tDepth: " + i + ", move from : " + makeBestMove.From + ", move to: " + makeBestMove.To);
                         //Write("\n\t\tPos eval: " + AdvEvaluate(SimulateMove(mainBoard, makeBestMove), whiteTurn, false));    // Evaluate the new position)
                         //Write("\tDepth: " + depth + ",\tResult: " + PositionsAmountTest(mainBoard, depth, whiteTurn) + " positions,\t\ttime elapsed: " + timeCounter.ElapsedMilliseconds + " ms");
@@ -150,7 +150,7 @@ class Program
                     Clear();
                     if (gBoardState == 1)        Write("\t\tCHECKMATE!  Black has won the game.");
                     else if (gBoardState == -1)  Write("\t\tCHECKMATE!  White has won the game.");
-                    else Write("\t\tFound mate in: " + (Math.Abs(gBoardState) - 3) + " moves.");
+                    else Write("\t\t[i]  - Found mate in: " + (Math.Abs(gBoardState) - 3) + " moves.");
 
                     //  Add draw logic in the future
                 }
@@ -468,20 +468,18 @@ class Program
 
     private static void DisplayBoard(byte[] _board, bool _displayType, byte _moveFrom = 64, byte _moveTo = 64)
     {
-        if (gPieceGotEaten) gPieceGotEaten = false;
-        else Write("\n\n\n");
-
-        Write("\n\n\n");
+        Write("\n\n");
         if (!_displayType) Write("\n\n\n");
-        Write("\t\t\t\tParsed board (in bytes): " + _board.Length + "\n\n\n\t\t\t  "); 
+        Write("\t\t\t\tParsed board (in bytes): " + _board.Length + "\n\n\n\t\t\t"); 
         if (_board.Length == 64)
         {
             if (!_displayType)  // If we are displaying the board in bytes
             {
+                Write("8 | ");
                 for (int i = 0; i < 64; i++)
                 {
                     if (_board[i] == 0) ForegroundColor = ConsoleColor.DarkGray;                             // Highlight empty squares
-                    else if (_board[i] == 1 || _board[i] == 9) ForegroundColor = ConsoleColor.White;        // Highlight pawns
+                    else if (_board[i] == 1 || _board[i] == 9) ForegroundColor = ConsoleColor.White;         // Highlight pawns
                     else if (_board[i] == 6 || _board[i] == 14) ForegroundColor = ConsoleColor.Red;          // Highlight kings
                     else if (_board[i] == 5 || _board[i] == 13) ForegroundColor = ConsoleColor.DarkMagenta;  // Highlight queens
                     else if (_board[i] < 8) ForegroundColor = ConsoleColor.DarkGreen;                        // Highlight every other white's pieces
@@ -494,23 +492,56 @@ class Program
 
                     if (_board[i] > 9) Write(" " + _board[i] + "  ");  // Print alligned grid
                     else Write(" 0" + _board[i] + "  ");               //
-                    if (i % 8 == 7) Write("\n\n\t\t\t  ");             // Move to new line
+                    if (i % 8 == 7 && i < 63)
+                    {
+                        //  Reset console colors
+                        BackgroundColor = ConsoleColor.Black;
+                        ForegroundColor = ConsoleColor.Gray;
+
+                        //  Move to new line and write the line ID
+                        Write("\n\t\t\t  |\n\t\t\t" + (64 - i) / 8 + " | ");
+                    }
                 }
+
+                //  Reset console colors
+                ForegroundColor = ConsoleColor.White;
+                BackgroundColor = ConsoleColor.Black;
+
+                //  Write column ID
+                Write("\n\t\t\t  +---------------------------------------");
+                Write("\n\t\t\t      A    B    C    D    E    F    G    H");
             }
             else
             {
-                Write("\t  ");
+                Write("\t8 | ");
                 for (int i = 0; i < 64; i++)
                 {
-                    if (_board[i] == 0) ForegroundColor = ConsoleColor.DarkGray;                             // Highlight empty squares
-                    else if (_board[i] == 1 || _board[i] == 9) ForegroundColor = ConsoleColor.White;        // Highlight pawns
-                    else if (_board[i] == 6 || _board[i] == 14) ForegroundColor = ConsoleColor.Red;          // Highlight kings
-                    else if (_board[i] == 5 || _board[i] == 13) ForegroundColor = ConsoleColor.DarkMagenta;  // Highlight queens
-                    else if (_board[i] < 8) ForegroundColor = ConsoleColor.DarkGreen;                        // Highlight every other white's pieces
-                    else ForegroundColor = ConsoleColor.DarkBlue;                                            // Highlight every other black's pieces
+                    // Highlight empty squares
+                    if (_board[i] == 0) ForegroundColor = ConsoleColor.DarkGray;
+
+                    // Highlight pawns
+                    else if (_board[i] == 1 || _board[i] == 9) ForegroundColor = ConsoleColor.White;
+
+                    // Highlight whiteking
+                    else if (_board[i] == 6) ForegroundColor = ConsoleColor.Red;
+
+                    // Highlight black king
+                    else if (_board[i] == 14) ForegroundColor = ConsoleColor.DarkMagenta;
+
+                    // Highlight white queen
+                    else if (_board[i] == 5) ForegroundColor = ConsoleColor.Red;
+
+                    // Highlight black queen
+                    else if (_board[i] == 13) ForegroundColor = ConsoleColor.DarkMagenta;
+
+                    // Highlight every other white's pieces
+                    else if (_board[i] < 8) ForegroundColor = ConsoleColor.DarkGreen;
+
+                    // Highlight every other black's pieces
+                    else ForegroundColor = ConsoleColor.DarkBlue;
 
 
-                    if((i + i / 8) % 2 == 0) BackgroundColor = ConsoleColor.Gray;
+                    if ((i + i / 8) % 2 == 0) BackgroundColor = ConsoleColor.DarkGray;
                     else BackgroundColor = ConsoleColor.Black;
 
 
@@ -521,15 +552,15 @@ class Program
 
                     switch (_board[i])
                     {
-                        case 0:  Write(" . "); break;
-                        case 1:  Write(" ♟ "); break;
-                        case 2:  Write(" ♞ "); break;
-                        case 3:  Write(" ♝ "); break;
-                        case 4:  Write(" ♜ "); break;
-                        case 5:  Write(" ♛ "); break;
-                        case 6:  Write(" ♚ "); break;
+                        case 0: Write("   "); break;
+                        case 1: Write(" ♙ "); break;
+                        case 2: Write(" ♞ "); break;
+                        case 3: Write(" ♝ "); break;
+                        case 4: Write(" ♜ "); break;
+                        case 5: Write(" ♛ "); break;
+                        case 6: Write(" ♚ "); break;
 
-                        case 9:  Write(" ♙ "); break;
+                        case 9: Write(" ♟ "); break;
                         case 10: Write(" ♘ "); break;
                         case 11: Write(" ♗ "); break;
                         case 12: Write(" ♖ "); break;
@@ -538,14 +569,26 @@ class Program
                     }
                     if (i % 8 == 7 && i < 63)
                     {
-                        BackgroundColor = ConsoleColor.Black;  // Set backgroung color to black (invisible)
-                        Write("\n\t\t\t\t  ");                 // Move to the new line
+                        //  Reset console colors
+                        BackgroundColor = ConsoleColor.Black;
+                        ForegroundColor = ConsoleColor.Gray;
+
+                        //  Move to the new line and write the column ID
+                        Write("\n\t\t\t\t" + (63 - i) / 8 + " | ");
                     }
                 }
+
+                //  Reset console colors
+                ForegroundColor = ConsoleColor.White;
+                BackgroundColor = ConsoleColor.Black;
+
+                //  Write column ID
+                Write("\n\t\t\t\t  +-------------------------");
+                Write("\n\t\t\t\t     A  B  C  D  E  F  G  H ");
             }
-            ForegroundColor = ConsoleColor.White;
-            BackgroundColor = ConsoleColor.Black;
-            Write("\n\n\t\t\t");
+            
+            //  Final offset for later info
+            Write("\n\n");
         }
         else
         {
@@ -927,7 +970,7 @@ class Program
 
         if (_writeInfo)  // Write extra info
         {
-            Write("Material: " + _materialVal + " + positional: " + _positionalVal + " + eg king assist: " + _endGameKingAssistVal);
+            Write("\t\t\tMaterial: " + _materialVal + " + positional: " + _positionalVal + " + eg king assist: " + _endGameKingAssistVal);
             Write("\n\t\t\t + open file: " + _openFileVal + " + king safety: " + _kingSafetyVal + " + enemy in check: " + _enemyInCheckVal + " +\n\t\t\t");
             Write("center control: " + _centerControlVal + " + pawn structure: " + _pawnStructureVal);
         }
