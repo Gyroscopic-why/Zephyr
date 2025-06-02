@@ -14,7 +14,7 @@ class Program
     static void Main()
     {
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Theta1";
+        Title = "Zephyr engine Theta2";
         
 
         Stopwatch timeCounter;
@@ -69,7 +69,7 @@ class Program
 
 
                     for (int i = 1; i <= depth && gBoardState == 0; i++)
-                    {
+                    { 
                         makeBestMove = AlphaBetaSearch(mainBoard, i, whiteTurn);
                         //  Start the search
 
@@ -1463,7 +1463,7 @@ class Program
         foreach(Move _move in _allMoves)
         {
             if(_depth != 5 && !_showInfo) _posAmount += PosAmountTest(SimulateMove(_board, _move), _depth - 1, !_isWhiteTurn);
-            else _posAmount += PosAmountTest(SimulateMove(_board, _move), _depth - 1, !_isWhiteTurn, true, _move.From, _move.To);
+            else _posAmount += PosAmountTest(SimulateMove(_board, _move), _depth - 1, !_isWhiteTurn, _showInfo, _move.From, _move.To);
         }
 
         return _posAmount;
@@ -1775,10 +1775,12 @@ class Program
     {
         List<Move> _generatedMoves = new List<Move>();  // We will store the generated moves here
         int[] _rookOffsets = { -1, -8, 8, 1 };          // Horizontal (-1, 1) and vertical (-8, 8) rook moves (1 iteration)
-        byte _xPos = (byte)(_position % 8);             // Rook x position
+        byte _xPos;
 
         for (int i = 0; i < 4; i++)
         {
+            _xPos = (byte)(_position % 8);             // Rook x position
+
             if ((i < 1 && _xPos > 0) || i == 1 || i == 2 || (i > 2 && _xPos < 7))
             {   // Prevent the rook from looping around the board (optimised checking)
 
