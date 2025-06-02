@@ -39,10 +39,6 @@ class Program
     private const byte bq2 = 208; // Black Queen  at even   (white) squares, code: q
     private const byte bk2 = 224; // Black King   at even   (white) squares, code: k
 
-    // Constants for the board parsing, where figures are stored in bytes (temporary ?)
-    // Ok now it is not so bad as it was before
-    // But I still should improve this
-
     // Material value constants
     private const int pVal = 101;    // Pawn   value
     private const int nVal = 300;    // kNight value
@@ -61,13 +57,13 @@ class Program
     private const int piecePositionPriority     = 1     ;
     private const int losingPlayerInCorner      = 50    ;
     private const int kingAggressionInEndgame   = 20    ;
-    private const int kingSafetyPriority        = 40    ;
-    private const int pieceActivityPriority     = 5     ;
+    //private const int kingSafetyPriority        = 40    ;
+    //private const int pieceActivityPriority     = 5     ;
     private const int pawnStructurePriority     = 15    ;
     //-------------------------------------------------//
 
 
-    // 32byte optimised board and 64 classic board are stored here
+    // 32byte optimised board and 64 byte classic board are stored here
     readonly private static byte[] /*optimisedBoard = new byte[32],*/ mainBoard = new byte[64];
 
     private static byte wkPos;                   //  White king position
@@ -99,7 +95,7 @@ class Program
     {
         Stopwatch timeCounter;
         OutputEncoding = System.Text.Encoding.Unicode;
-        Title = "Zephyr engine Eta.13.2";                       //  Set the app title
+        Title = "Zephyr engine Eta.13.3";                       //  Set the app title
         string continueGame = "";
         Move makeBestMove = null;
 
@@ -128,17 +124,29 @@ class Program
                 gSkippedPositions = 0;                                //  Reset the skipped positions
                 gEvaluatedPositions = 0;                              //  Reset the evaluated positions
                 timeCounter = Stopwatch.StartNew();
-                if (Math.Abs(gBoardState) != 1)                       //  If the game hasnt ended yet
+                if (Math.Abs(gBoardState) != 1 && Math.Abs(gBoardState) < 125)   //  If the game hasnt ended yet
                 {
                     gBoardState = 0;                                  //  Reset board state for the loop
-                    for (int i = 1; i <= depth && gBoardState != 1; i++)
+                    for (int i = 1; i <= depth && gBoardState == 0; i++)
                     {
                         makeBestMove = AlphaBetaSearch(mainBoard, i, whiteTurn);          //  Start the search
                         Write("\n\t\tTotal evaluated position: " + gEvaluatedPositions);  //  Print the amount of evaluated positions
                         if(makeBestMove != null) Write("\n\t\tDepth: " + i + ", move from : " + makeBestMove.From + ", move to: " + makeBestMove.To);
-                        //Write("\n\t\tPos eval: " + AdvEvaluate(SimulateMove(mainBoard, makeBestMove), whiteTurn, false));    // Evaluate the new position)
-                        //Write("\tDepth: " + depth + ",\tResult: " + PositionsAmountTest(mainBoard, depth, whiteTurn) + " positions,\t\ttime elapsed: " + timeCounter.ElapsedMilliseconds + " ms");
-                        //depth++;
+
+
+                        if (gBoardState != 0)
+                        {
+                            if (makeBestMove == null || (Math.Abs(gBoardState) - 1 < 0)) Write("\n\n\t\t[i]  - CHECKMATE!  No moves possible.");
+                            else
+                            {
+                                if      (gBoardState ==  127) Write("\n\n\t\t[i]  - Stalemate!  No moves possible.");
+                                else if (gBoardState == -127) Write("\n\n\t\t[i]  - Stalemate!  No moves possible.");
+                                else if (gBoardState ==  126) Write("\n\n\t\t[i]  - Draw! Checkmates are impossible");
+                                else if (gBoardState == -126) Write("\n\n\t\t[i]  - Draw! By 3F repetition");
+                                else if (gBoardState ==  125) Write("\n\n\t\t[i]  - Draw! By 50 move no capture move rule");
+                                else                          Write("\n\n\t\t[i]  - Found mate in " + (Math.Abs(gBoardState) - 1) + " moves.");
+                            }
+                        }
                     }
                     ReadKey();
                     ApplyMove(mainBoard, makeBestMove);                // Apply the best found move
@@ -148,11 +156,16 @@ class Program
                 if(gBoardState != 0)
                 {
                     Clear();
-                    if (gBoardState == 1)        Write("\t\tCHECKMATE!  Black has won the game.");
-                    else if (gBoardState == -1)  Write("\t\tCHECKMATE!  White has won the game.");
-                    else Write("\t\t[i]  - Found mate in: " + (Math.Abs(gBoardState) - 3) + " moves.");
-
-                    //  Add draw logic in the future
+                    if (gBoardState == 127)                 Write("\t\t[i]  - Stalemate!  No moves possible.");
+                    else if (gBoardState == -127)           Write("\t\t[i]  - Stalemate!  No moves possible.");
+                    else if (gBoardState ==  126)           Write("\t\t[i]  - Draw! Checkmates are impossible");
+                    else if (gBoardState == -126)           Write("\t\t[i]  - Draw! By 3F repetition");
+                    else if (gBoardState ==  125)           Write("\t\t[i]  - Draw! By 50 move no capture move rule");
+                    
+                    else if (gBoardState == 1)              Write("\t\t[i]  - CHECKMATE!  Black has won the game.");
+                    else if (gBoardState == -1)             Write("\t\t[i]  - CHECKMATE!  White has won the game.");
+                    else if (Math.Abs(gBoardState) - 2 > 0) Write("\t\t[i]  - Found mate in " + (Math.Abs(gBoardState) - 2) + " moves.");
+                    else                                    Write("\t\t[i]  - Found mate in: 0 moves.");
                 }
 
                 timeCounter.Stop();
@@ -190,12 +203,13 @@ class Program
 
     private static bool GetEncodedBoard(bool _type) // Check the type of board
     {                                               // true = optimised board, false = classic board
-        bool _validEncoding = false, _reset = false;
+        bool _validEncoding = false, _reset;
         string _userInput, _encodedBoard;
         while (!_validEncoding)
         {
             _encodedBoard = "";
             Write("\n\tEnter the board (64 characters): (SP: 0 / rnbqkbnrpppppppp32PPPPPPPPRNBQKBNR)\n\t");
+            _reset = false;
 
             while (_encodedBoard.Length < 64 && !_validEncoding && !_reset)
             {
@@ -246,7 +260,7 @@ class Program
         return _validEncoding;
     }
 
-    private static bool TryParseOptimisedBoard(string _encoded, byte[] _board)
+    /*private static bool TryParseOptimisedBoard(string _encoded, byte[] _board)
     {
         byte _tempBuffer;
         for (byte i = 0; i < 32; i++)
@@ -279,7 +293,7 @@ class Program
             }
         }
         return true;
-    } // Needs an update
+    } // Needs an update*/
     private static bool TryParseClassicBoard(ref string _encoded)
     {
         byte _fenOffset = 0;
@@ -1167,31 +1181,6 @@ class Program
 
         return whitePawnStructure - blackPawnStructure;
     }
-
-    /*private static byte CountAttacks(byte[] _board, int _ourPos, bool _weWhite)
-    {
-        // _ourPos is the position of the piece we want to calculate attacks on
-        // _weWhite is the color of our piece
-
-        byte _attacks = 0;   // The amount of possible attacks on our piece
-
-        for (byte i = 0; i < 64; i++)  // Scan the board for possible attacks
-        {
-            byte _enemy = _board[i];  // Get the enemy piece, although we arent sure its an enemy yet
-
-            if ((_weWhite && _enemy > 8) || (!_weWhite && _enemy < 8)) 
-            {   // Dont count attacks from pieces of the same color
-                
-                // Check if the enemy piece can attack our square
-
-                // i - is the enemy position
-                if (CanAttack(_board, _enemy, (byte)(i % 8), (byte)(i / 8), 
-                    (byte)(_ourPos % 8), (byte)(_ourPos / 8))) _attacks++;
-            }
-        }
-
-        return _attacks;
-    }*/
     private static bool IsIsolatedPawn(byte[] _board, int _x, int _y, bool isWhite)
     {
         // Check for pawn chain
@@ -1213,88 +1202,7 @@ class Program
         }
         return true;
     }
-    /*private static bool CanAttack(byte[] _board, byte _enemy, byte _fromX, byte _fromY, byte _toX, byte _toY)
-    {
-        int _distX = Math.Abs(_toX - _fromX);      // Important to note that I store the abs value
-        int _distY = Math.Abs(_toY - _fromY);      // to reduce the checks needed for the piece attacks (since they are simetrical)
 
-        switch (_enemy)
-        {
-            case 1:  // White Pawn
-            case 9:  // Black pawn
-                return (_distX == 1 && _distY == 1); // Pawns attacks diagonaly and only 1 square
-
-            case 2:  // White kNight
-            case 10: // Black kNight
-                return (_distX == 2 && _distY == 1) || (_distX == 1 && _distY == 2); // kNight attacks
-
-            case 3:  // White Bishop
-            case 11: // Black Bishop
-                if (_distX == _distY) // if the bishop is in diagonal line with our square
-                {
-                    return (!CheckForDiagonalBlocking(_board, _fromX, _fromY, _toX, _toY));
-                    // Bishops attacks diagonaly
-                }
-                return false; // return false if we cant reach the piece
-
-            case 4:  // White Rook
-            case 12: // Black Rook
-                if (_distX == 0 || _distY == 0)  // if the bishop is in diagonal line with our square
-                {
-                    return !(CheckForVerticalBlocking(_board, (byte)(8 * _fromY + _fromX), (byte)(8 * _toY + _toX)) ||
-                     CheckForHorizontalBlocking(_board, (byte)(8 * _fromY + _fromX), (byte)(8 * _toY + _toX)));
-                    // Rooks attacks vertically or horizontally
-                }
-                return false; // return false if we cant reach the piece
-
-            case 5:  // White Queen
-            case 13: // Black Queen
-                if (_distX == 0 || _distY == 0 || _distX == _distY)  // If the queen is in line with our square
-                {
-                    return !(CheckForVerticalBlocking(_board, (byte)(8 * _fromY + _fromX), (byte)(8 * _toY + _toX)) ||
-                     CheckForDiagonalBlocking(_board, _fromX, _fromY, _toX, _toY) ||
-                     CheckForHorizontalBlocking(_board, (byte)(8 * _fromY + _fromX), (byte)(8 * _toY + _toX)));
-                    // Queens attack like bishops or rooks
-                    // So we check for vertical or diagonal or horizontal blocking
-                }
-                return false; // return false if we cant reach the piece
-                
-        }
-        return false; // Piece attack logic, true if our square can be attacked, false if it cant
-    }*/
-
-    private static bool CheckForDiagonalBlocking(byte[] _board, byte _fromX, byte _fromY, byte _toX, byte _toY)
-    {
-        for (byte y = Math.Min(_fromY, _toY); y < Math.Max(_fromY, _toY); y++)
-        {
-            for (byte x = Math.Min(_fromX, _toX); x < Math.Max(_fromX, _toX); x++)
-            {
-                if (_board[y * 8 + x] != 0) return true; // Check if the path is obstructed
-            }
-        }
-        return false; // return false = no obstruction so the attack is possible
-    }
-
-    private static bool CheckForVerticalBlocking(byte[] _board, byte _from, byte _to)
-    {
-        if (Math.Abs(_from - _to) % 8 != 0) return false; // return false = obstruction not possible if we are in different lanes
-        for (byte position = (byte)(Math.Min(_from, _to) + 8); position < Math.Max(_from, _to); position += 8)
-        {
-            //Write("b[" + position + "]:" + _board[position] + "\n");
-            if (_board[position] != 0) return true; // Check if the path is obstructed
-        }
-        return false; // return false = no obstruction so the attack is possible
-    }
-     
-    private static bool CheckForHorizontalBlocking(byte[] _board, byte _from, byte _to)
-    {
-        if (Math.Abs(_from - _to) > 7) return false; // return false = obstruction not possible if we are in different lanes
-        for (byte position = (byte)(Math.Min(_from, _to) + 1); position < Math.Max(_from, _to); position++)
-        {
-            if (_board[position] != 0) return true; // Check if the path is obstructed
-        }
-        return false; // return false = no obstruction so the attack is possible
-    }
 
     private class Move
     {
@@ -1303,7 +1211,6 @@ class Program
         public byte Piece { get; set; }         // Moving piece
         public byte CapturedPiece { get; set; } // Captured piece (for display)
     }
-
     private static List<Move> GenerateAllMoves(byte[] _thisboard, bool _isWhiteTurn)
     {
         List<Move> _moves = new List<Move>();
@@ -1401,43 +1308,6 @@ class Program
 
         return _moves;
     }
-
-
-    private static byte[] SimulateMove(byte[] _oldBoard, Move _move)
-    {
-        byte[] _newBoard = (byte[])_oldBoard.Clone();
-        // Someone explain to me WHY you need to clone this
-        // Because if you dont, the original (_oldBoard) gets changed to _newBoard
-
-        if (_move.To == 6)       wkPos = _move.To;  // If the white king moves, update the king position
-        else if (_move.To == 14) bkPos = _move.To;  // If the black king moves, update the king position
-
-        _newBoard[_move.To] = _move.Piece;   //
-        _newBoard[_move.From] = 0;           // Simulating the move
-
-        return _newBoard;        // Returning the new board with the simulated move
-    }
-
-    private static int PositionsAmountTest(byte[] _board, int _depth, bool _isWhiteTurn)
-    {
-        if (_depth == 0)
-            return 1;
-
-        List<Move> _moves = GenerateAllMoves(_board, _isWhiteTurn);
-
-        int _amountOfPositions = 0;
-
-        foreach (Move _move in _moves)
-        {
-            //PrintParsedBoard(SimulateMove(_board, _move), _move.From, _move.To);
-            //Write("\nMove from: " + _move.From + " to " + _move.To + ", Piece: " + _move.Piece);
-            _amountOfPositions += PositionsAmountTest(SimulateMove(_board, _move), _depth - 1, !_isWhiteTurn);
-        }
-
-        return _amountOfPositions;
-    }
-
-
     private static bool IsKingInCheck(byte[] _board, byte _kingPos, bool _kingColor)
     {
         if(_kingPos == 64)
@@ -1607,7 +1477,19 @@ class Program
 
         return false;                 // return that the king is not in check
     }
-    
+
+    private static byte[] SimulateMove(byte[] _oldBoard, Move _move)
+    {
+        byte[] _newBoard = (byte[])_oldBoard.Clone();
+
+        if (_move.To == 6) wkPos = _move.To;  // If the white king moves, update the king position
+        else if (_move.To == 14) bkPos = _move.To;  // If the black king moves, update the king position
+
+        _newBoard[_move.To] = _move.Piece;   //
+        _newBoard[_move.From] = 0;           // Simulating the move
+
+        return _newBoard;        // Returning the new board with the simulated move
+    }
 
 
     private static Move AlphaBetaSearch(byte[] _board, int _depth, bool _maximizingPlayer)
@@ -1625,9 +1507,10 @@ class Program
             foreach (Move _move in _moves)
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
-
                 int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _minEval, false);
-                //Write("\nCur eval: " + _eval);
+
+                //Write("\n\tCHOSEN MOVE from: " + _move.From + " to: " + _move.To);
+                //Write("\n\tCur eval: " + _eval);
                 if (_eval > _maxEval)
                 {
                     _maxEval = _eval;
@@ -1639,7 +1522,10 @@ class Program
             {
                 //  Update "found mate in" text with new info
                 //Write("\nCcH: " + _depth + " to state: " + gBoardState);
-                if (gBoardState == 0 || _depth <= Math.Abs(gBoardState)) gBoardState = (sbyte)(_depth);
+                if (gBoardState == 0 || _depth < Math.Abs(gBoardState)) gBoardState = (sbyte)(_depth - 1);
+
+                //  Check for stalemate
+                if (Math.Abs(gBoardState) < 2 && !IsKingInCheck(_board, wkPos, true)) gBoardState = 127;
             }
             //Write("  State: " + gBoardState);
             return _bestMove;
@@ -1650,7 +1536,9 @@ class Program
             {
                 byte[] _newBoard = SimulateMove(_board, _move);
                 int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _maxEval, _minEval, true);
-                //Write("\nCur eval: " + _eval);
+
+                //Write("\n\tCHOSEN from: " + _move.From + " to: " + _move.To);
+                //Write("\n\tCur eval: " + _eval);
                 if (_eval < _minEval)
                 {
                     _minEval = _eval;
@@ -1662,7 +1550,10 @@ class Program
             {
                 //  Update "found mate in" text with new info K1k22q38
                 //Write("\nCcH: " + _depth + " to state: " + gBoardState);
-                if (gBoardState == 0 || _depth <= Math.Abs(gBoardState)) gBoardState = (sbyte)-(_depth);
+                if (gBoardState == 0 || _depth < Math.Abs(gBoardState)) gBoardState = (sbyte)-(_depth - 1);
+
+                //  Check for stalemate
+                if (Math.Abs(gBoardState) < 2 && !IsKingInCheck(_board, bkPos, false)) gBoardState = -127;
             }
             //Write("  State: " + gBoardState);
             return _bestMove;
@@ -1688,7 +1579,7 @@ class Program
                     byte[] _newBoard = SimulateMove(_board, _move);
                     int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _beta, false);
 
-                    //Write("\n\t\tTry move from: " + _move.From + " to: " + _move.To + ", calc eval: " + _eval);
+                    //if(_depth == 1) Write("\n\t\tTry move from: " + _move.From + " to: " + _move.To + ", calc eval: " + _eval);
                     if (_eval > _alpha)
                     {
                         _alpha = _eval;  // Set new max eval
@@ -1708,7 +1599,7 @@ class Program
                     byte[] _newBoard = SimulateMove(_board, _move);
                     int _eval = AlphaBetaEvalSearch(_newBoard, _depth - 1, _alpha, _beta, true);
 
-                    //Write("\n\t\tTry move from: " + _move.From + " to: " + _move.To + ", calc eval: " + _eval);
+                    //if(_depth == 1) Write("\n\t\tTry move from: " + _move.From + " to: " + _move.To + ", calc eval: " + _eval);
                     if (_eval < _beta)
                     {
                         _beta = _eval;
@@ -1724,15 +1615,17 @@ class Program
         }
         else
         {
-            if (_maximizingPlayer)
+            if (!whiteTurn)
             {
-                if (IsKingInCheck(_board, bkPos, false)) return 999999;
+                //Write("\n\nCurrent move: " + _maximizingPlayer + ", Depth: " + _depth + " (Black king in check: " + IsKingInCheck(_board, wkPos, true) + ") no moves!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n");
+                if (IsKingInCheck(_board, 64, false)) return 999999;
                 else return Math.Max(-999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, false));
             }
             else
             {
-                if (IsKingInCheck(_board, wkPos, true)) return -999999;
-                else return Math.Min(999999,  AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, true));
+                //Write("\n\nCurrent move: " + _maximizingPlayer + ", Depth: " + _depth + " (White king in check: " + IsKingInCheck(_board, wkPos, true) + ") no moves!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n");
+                if (IsKingInCheck(_board, 64, true)) return -999999;
+                else return Math.Min(999999, AlphaBetaEvalSearch(_board, _depth - 1, _alpha, _beta, true));
             }
         }
     }
@@ -1946,7 +1839,7 @@ class Program
     }
     private static List<Move> GenerateQueenMoves (byte[] _board, byte _position, byte _piece, bool _isWhite)
     {
-        List<Move> _generatedMoves = new List<Move>();
+        List<Move> _generatedMoves;
 
         // The queen is literally just a rook + bishop
         // So we calculate as if the piece is a bishop or a rook and add all moves together
@@ -2067,7 +1960,7 @@ class Program
     }
     private static bool GetTurn()
     {
-        string _userInput = "";
+        string _userInput;
 
         Write("\n\tWhose turn? (W / Y / YES / 1  = player white turn): ");
         _userInput = ReadLine().Trim().ToLower();
@@ -2080,13 +1973,13 @@ class Program
     {
         string _userInput;
         int _depth = -1;
-        Write("\tEnter the depth for the algorithm search (only from 1 to 8): ");
-        while (_depth < 1 || _depth > 8)
+        Write("\tEnter the depth for the algorithm search (only from 1 to 10): ");
+        while (_depth < 1 || _depth > 10)
         {
             _userInput = ReadLine();
             Clear();
             if (!int.TryParse(_userInput, out _depth)) Write("\tInvalid input, please try again: ");
-            else if (_depth < 1 || _depth > 8) Write("\tOut of bounds, please enter a valid number from the interval: ");
+            else if (_depth < 1 || _depth > 10) Write("\tOut of bounds, please enter a valid number from the interval: ");
         }
         Write("\n");
         return _depth;
