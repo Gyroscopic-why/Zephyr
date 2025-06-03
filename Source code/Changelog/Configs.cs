@@ -1,4 +1,4 @@
-namespace Zephyr
+﻿namespace Zephyr
 {
     internal class Configs
     {
@@ -106,5 +106,19 @@ namespace Zephyr
 
         static public int gSkippedPositions;       //  Storing the amount of skipped positions
         static public int gEvaluatedPositions;     //  Storing the amount of evaluated positions
+
+
+        public class Move
+        {
+            public byte From { get; set; }          // Start position
+            public byte To { get; set; }            // Destination position
+            public byte Piece { get; set; }         // Moving piece
+            public byte CapturedPiece { get; set; } // Captured piece (for display)
+        }
+
     }
+
+
+
+    
 }
